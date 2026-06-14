@@ -206,12 +206,14 @@ npm run build
 - [x] 自动化功能（阅读/点赞）
 
 ### 🚧 规划中
+
+> 以下功能参考 [LDStatusPro](https://github.com/caigg188/LDStatusPro) 设计实现
+
 - [ ] **云同步**：跨设备同步阅读数据（需搭建 Cloudflare Workers 后端）
   - 详见 [云同步实现计划](docs/cloud-sync-plan.md)
 - [ ] **AI 总结**：个性化用户活动总结（参考 LDStatusPro 吃瓜助手）
   - 详见 [AI 总结实现计划](docs/ai-summary-plan.md)
-- [ ] **导出功能**：导出阅读统计、活动记录为 JSON/CSV
-- [ ] **数据可视化**：更丰富的图表展示
+- [ ] **导出功能**：导出个人数据报告（参考 LDStatusPro 导出格式）
 - [ ] **多语言支持**：英文界面
 
 ---
