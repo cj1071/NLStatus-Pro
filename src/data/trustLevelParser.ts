@@ -1,22 +1,7 @@
-import { CONFIG, PATTERNS } from '../config';
+import { PATTERNS } from '../config';
 import { CURRENT_SITE } from '../site';
 import { Network } from '../utils/network';
 import { Utils } from '../utils/helpers';
-import type { TrustRequirementDefinition } from '../config';
-
-export interface UserStats {
-  topics_entered: number;
-  posts_read_count: number;
-  days_visited: number;
-  time_read: number;
-  likes_given: number;
-  likes_received: number;
-  topic_count: number;
-  post_count: number;
-  recent_time_read: number;
-  not_silenced: number;
-  not_suspended: number;
-}
 
 export interface UserProfile {
   trust_level: number;
@@ -25,6 +10,9 @@ export interface UserProfile {
   title: string;
   name: string;
   username: string;
+  created_at?: string;
+  total_following: number;
+  total_followers: number;
   next_level_name?: string;
   upgrade_message?: string;
   leader_upgrade_needed?: boolean;
@@ -52,19 +40,6 @@ export interface UpgradeProgress {
   leader_upgrade_needed: boolean;
   message?: string;
 }
-
-const labelMap: Record<string, string> = {
-  not_silenced: '未被禁言',
-  not_suspended: '未被封禁',
-  topics_entered: '浏览话题',
-  posts_read_count: '阅读帖子',
-  time_read: '阅读时长',
-  days_visited: '访问天数',
-  post_count: '回复帖子',
-  topic_count: '回复话题',
-  likes_given: '送出点赞',
-  likes_received: '收到点赞',
-};
 
 export class TrustLevelParser {
   constructor(private _network: Network) {}
@@ -120,47 +95,6 @@ export class TrustLevelParser {
       .filter((condition) => condition.length > 0);
   }
 
-  private _isRestricted(user: Record<string, unknown>, keys: string[]): boolean {
-    return keys.some((key) => {
-      const val = user[key];
-      if (typeof val === 'boolean') return val;
-      if (typeof val === 'number') return val > 0;
-      if (typeof val === 'string') return val.length > 0;
-      return val != null;
-    });
-  }
-
-  async fetchCurrentStats(username: string): Promise<UserStats | null> {
-    if (!CURRENT_SITE) return null;
-    try {
-      const [summaryData, profileData] = await Promise.all([
-        this._network.fetchJSON<any>(`${CURRENT_SITE.origin}/u/${encodeURIComponent(username)}/summary.json`, { cacheTtl: 300000 }),
-        this._network.fetchJSON<any>(`${CURRENT_SITE.origin}/u/${encodeURIComponent(username)}.json`, { cacheTtl: 300000 }),
-      ]);
-      const summary = summaryData?.user_summary;
-      if (!summary) throw new Error('无法获取用户统计');
-      const user = profileData?.user || {};
-      const isSilenced = this._isRestricted(user, ['silenced', 'silenced_till', 'silence_reason']);
-      const isSuspended = this._isRestricted(user, ['suspended', 'suspended_till', 'suspended_at', 'suspend_reason']);
-      return {
-        topics_entered: Utils.toSafeInt(summary.topics_entered),
-        posts_read_count: Utils.toSafeInt(summary.posts_read_count),
-        days_visited: Utils.toSafeInt(summary.days_visited),
-        time_read: Utils.toSafeInt(summary.time_read),
-        likes_given: Utils.toSafeInt(summary.likes_given),
-        likes_received: Utils.toSafeInt(summary.likes_received),
-        topic_count: Utils.toSafeInt(summary.topic_count),
-        post_count: Utils.toSafeInt(summary.post_count),
-        recent_time_read: Utils.toSafeInt(summary.recent_time_read),
-        not_silenced: isSilenced ? 0 : 1,
-        not_suspended: isSuspended ? 0 : 1,
-      };
-    } catch (e) {
-      console.warn('[NLE] Failed to fetch summary stats:', (e as Error).message);
-      return null;
-    }
-  }
-
   async fetchUserProfile(username: string): Promise<UserProfile | null> {
     if (!CURRENT_SITE) return null;
     try {
@@ -175,6 +109,9 @@ export class TrustLevelParser {
         title: user.title || '',
         name: user.name || '',
         username: user.username || username,
+        created_at: typeof user.created_at === 'string' ? user.created_at : undefined,
+        total_following: Utils.toSafeInt(user.total_following),
+        total_followers: Utils.toSafeInt(user.total_followers),
       };
     } catch (e) {
       console.warn('[NLE] Failed to fetch user profile:', (e as Error).message);
@@ -207,46 +144,6 @@ export class TrustLevelParser {
       console.warn('[NLE] Failed to fetch upgrade progress:', (e as Error).message);
       return null;
     }
-  }
-
-  getRequirements(currentLevel: number): TrustRequirementDefinition[] | null {
-    if (currentLevel >= 4) return null;
-    return CONFIG.TRUST_LEVEL_REQUIREMENTS[currentLevel + 1] || null;
-  }
-
-  buildRequirementItems(currentStats: UserStats | null, currentLevel: number): RequirementItem[] {
-    const reqs = this.getRequirements(currentLevel);
-    if (!reqs) return [];
-    if (!currentStats) return [];
-
-    return reqs.map((req) => {
-      const key = req.key;
-      const required = req.required ?? 0;
-      const isInfo = req.mode === 'info' || req.required == null;
-      const current = (currentStats as any)[key] || 0;
-      const isStatus = key === 'not_silenced' || key === 'not_suspended';
-      let display = current;
-      if (key === 'time_read') display = Math.floor(current / 60);
-      else if (isStatus) display = current >= required ? 1 : 0;
-      const requirementDisplay = key === 'time_read' ? Math.floor(required / 60) : required;
-      const isReverse = req.mode === 'max';
-      const isSuccess = !isInfo && (isReverse ? current <= required : current >= required);
-      const rawProgress = isReverse
-        ? (current <= required ? 1 : required / Math.max(current, 1))
-        : (required > 0 ? current / required : 0);
-      return {
-        key,
-        name: req.label || labelMap[key] || key,
-        current: display,
-        required: isInfo ? null : requirementDisplay,
-        isSuccess,
-        progress: isInfo ? 0 : Math.min(1, rawProgress),
-        unit: req.unit,
-        note: req.note,
-        isInfo,
-        countsTowardProgress: req.countsTowardProgress !== false && !isInfo,
-      };
-    });
   }
 
   buildOfficialRequirementItems(progress: UpgradeProgress): RequirementItem[] {

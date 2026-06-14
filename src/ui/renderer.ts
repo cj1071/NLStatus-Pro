@@ -25,7 +25,33 @@ export class Renderer {
     return this._panel.$;
   }
 
+  renderProfileCard(user: UserProfile | null): void {
+    const card = this.$.profileCard;
+    if (!user) {
+      card.style.display = 'none';
+      return;
+    }
+    card.style.display = '';
+
+    const avatarEl = this.$.profileAvatar as HTMLImageElement;
+    let avatar = user.avatar;
+    if (avatar && CURRENT_SITE && !avatar.startsWith('http')) avatar = `${CURRENT_SITE.origin}${avatar}`;
+    avatarEl.src = avatar || Utils.buildLetterAvatar(user.username);
+    avatarEl.onerror = () => { avatarEl.onerror = null; avatarEl.src = Utils.buildLetterAvatar(user.username); };
+
+    this.$.profileName.textContent = user.name || user.username || '--';
+    this.$.profileUsername.textContent = user.username ? `@${user.username}` : '';
+
+    const days = user.created_at ? Utils.daysSince(user.created_at) : 0;
+    this.$.profileMeta.innerHTML = `
+      <span>关注 <b>${Utils.formatNumber(user.total_following)}</b></span>
+      <span>粉丝 <b>${Utils.formatNumber(user.total_followers)}</b></span>
+      <span class="nle-profile-days">来 NL 站 <b>${days}</b> 天</span>
+    `;
+  }
+
   renderTrustLevel(user: UserProfile | null, _stats: unknown, reqItems: RequirementItem[], pct: number): void {
+    this.renderProfileCard(user);
     const cfg = Screen.getPanelConfig();
     const r = cfg.ringSize / 2 - 8;
     const circ = 2 * Math.PI * r;
@@ -59,7 +85,7 @@ export class Renderer {
         ? `Lv${currentLevel} · 等待审核`
         : (user?.next_level_name ? `Lv${currentLevel} → ${nextLevelName}` : `Lv${currentLevel} → Lv${nextLevel} · ${nextLevelName}`);
     this.$.trustBadge.style.background = `linear-gradient(135deg, ${color}, ${color}cc)`;
-    this.$.trustUser.textContent = user?.name || user?.username || '--';
+    this.$.trustUser.textContent = user ? `⚡ 能量值 ${Utils.formatNumber(user.gamification_score)}` : '--';
 
     let reqHTML = '';
     if (reqItems.length === 0) {
@@ -181,7 +207,7 @@ export class Renderer {
         </div>
       `;
     }
-    return html || '<div class="nle-empty">暂无活动记录</div>';
+    return html || '<div class="nle-empty">暂无话题记录</div>';
   }
 
   renderFollowList(users: FollowUser[]): string {

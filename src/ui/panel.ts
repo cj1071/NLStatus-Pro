@@ -17,7 +17,7 @@ import { Notifier } from '../tracking/notifier';
 import { Renderer } from './renderer';
 import { NavBarEnergy } from './navBarEnergy';
 
-import type { UserProfile, RequirementItem, UserStats } from '../data/trustLevelParser';
+import type { UserProfile, RequirementItem } from '../data/trustLevelParser';
 import type { ActivityItem, ActivityPage, ActivityType } from '../data/activityFetcher';
 import type { FollowUser } from '../data/followFetcher';
 
@@ -141,6 +141,21 @@ export default class Panel {
           </button>
         </div>
       </div>
+      <div class="nle-profile-card" id="nle-profileCard">
+        <div class="nle-profile-head">
+          <img class="nle-profile-avatar" id="nle-profileAvatar" alt="">
+          <div class="nle-profile-main">
+            <div class="nle-profile-name" id="nle-profileName">--</div>
+            <div class="nle-profile-username" id="nle-profileUsername"></div>
+            <div class="nle-profile-meta" id="nle-profileMeta"></div>
+          </div>
+        </div>
+        <div class="nle-profile-actions" id="nle-profileActions">
+          <button class="nle-profile-btn" data-action="logout" title="注销登录">⏻ 注销</button>
+          <button class="nle-profile-btn" data-action="summary" title="查看个人总结">📊 总结</button>
+          <button class="nle-profile-btn" data-action="export" title="导出数据">📤 导出</button>
+        </div>
+      </div>
       <div class="nle-tab-nav">
         <button class="nle-tab active" data-tab="trust">📊 信任</button>
         <button class="nle-tab" data-tab="leaderboard">🏆 排行</button>
@@ -164,7 +179,7 @@ export default class Panel {
         </div>
         <div class="nle-section" id="nle-sec-leaderboard">
           <div class="nle-lb-subtabs">
-            <button class="nle-lb-subtab active" data-lb-tab="energy">⚡ 能量榜</button>
+            <button class="nle-lb-subtab active" data-lb-tab="energy">⚡ 财富榜</button>
             <button class="nle-lb-subtab" data-lb-tab="posting">💧 水王榜</button>
           </div>
           <div id="nle-energyLb"></div>
@@ -176,7 +191,7 @@ export default class Panel {
             <button class="nle-lb-subtab" data-activity-type="bookmarks">🔖 收藏</button>
             <button class="nle-lb-subtab" data-activity-type="replies">💬 回复</button>
             <button class="nle-lb-subtab" data-activity-type="likes">❤️ 点赞</button>
-            <button class="nle-lb-subtab" data-activity-type="topics">✏️ 主题</button>
+            <button class="nle-lb-subtab" data-activity-type="topics">✏️ 话题</button>
             <button class="nle-lb-subtab" data-activity-type="reactions">⚡ 互动</button>
             <button class="nle-lb-subtab" data-activity-type="notifications">🔔 通知</button>
           </div>
@@ -203,6 +218,7 @@ export default class Panel {
     document.body.appendChild(this._el);
 
     const ids = [
+      'profileCard', 'profileAvatar', 'profileName', 'profileUsername', 'profileMeta', 'profileActions',
       'trustRing', 'trustBadge', 'trustUser', 'reqList',
       'readingToday', 'readingLevel', 'readingActive',
       'heatmapGrid', 'heatmapLabels', 'readingGoalBar',
@@ -277,6 +293,14 @@ export default class Panel {
     }
 
     this._el.querySelector('#nle-activityLoadmore')!.addEventListener('click', () => this._loadActivity(true));
+
+    // profile action buttons
+    for (const b of this._el.querySelectorAll<HTMLElement>('.nle-profile-btn')) {
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._handleProfileAction(b.dataset.action!);
+      });
+    }
 
     // follow tabs
     for (const s of this._el.querySelectorAll<HTMLElement>('.nle-follow-stat')) {
@@ -571,10 +595,9 @@ export default class Panel {
         return;
       }
 
-      let stats: UserStats | null = null;
       let renderProfile = profile;
-      let reqItems: RequirementItem[];
-      let pct: number;
+      let reqItems: RequirementItem[] = [];
+      let pct = 0;
 
       if (officialProgress) {
         renderProfile = {
@@ -586,17 +609,13 @@ export default class Panel {
         };
         reqItems = this._trustParser.buildOfficialRequirementItems(officialProgress);
         pct = this._trustParser.getCompletionPercent(reqItems);
-      } else {
-        stats = await this._trustParser.fetchCurrentStats(username);
-        reqItems = this._trustParser.buildRequirementItems(stats, profile.trust_level);
-        pct = this._trustParser.getCompletionPercent(reqItems);
       }
 
       this._user = renderProfile;
       this._reqItems = reqItems;
       this._lastPct = pct;
 
-      this._renderer.renderTrustLevel(renderProfile, stats, reqItems, pct);
+      this._renderer.renderTrustLevel(renderProfile, null, reqItems, pct);
       this.tracker.init(username);
       this._notifier.checkMilestones(reqItems);
     } catch (e) {
@@ -686,8 +705,8 @@ export default class Panel {
       this._followingList = following;
       this._followersList = followers;
 
-      this._els.followingCount.textContent = String(following.length);
-      this._els.followersCount.textContent = String(followers.length);
+      this._els.followingCount.textContent = String(this._user?.total_following ?? following.length);
+      this._els.followersCount.textContent = String(this._user?.total_followers ?? followers.length);
       this._loadFollowList();
     } catch { /* ignore */ }
   }
@@ -704,15 +723,68 @@ export default class Panel {
     }
   }
 
+  /* ─── Profile Actions ─── */
+
+  private _handleProfileAction(action: string): void {
+    const username = this.storage.getUser();
+    if (action === 'summary') {
+      if (username && CURRENT_SITE) window.open(`${CURRENT_SITE.origin}/u/${encodeURIComponent(username)}/summary`, '_blank');
+      return;
+    }
+    if (action === 'export') {
+      this._renderer.showToast('导出功能开发中');
+      return;
+    }
+    if (action === 'logout') {
+      this._logout(username);
+      return;
+    }
+  }
+
+  private async _logout(username: string | null): Promise<void> {
+    if (!username || !CURRENT_SITE) return;
+    if (!window.confirm('确定要注销登录吗？')) return;
+    try {
+      const csrf = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)?.content || '';
+      const resp = await fetch(`${CURRENT_SITE.origin}/session/${encodeURIComponent(username)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'X-CSRF-Token': csrf,
+          'X-Requested-With': 'XMLHttpRequest',
+          'Discourse-Logged-In': 'true',
+        },
+      });
+      const data = await resp.json().catch(() => null);
+      const redirect = data?.redirect_url || `${CURRENT_SITE.origin}/`;
+      window.location.href = redirect;
+    } catch {
+      this._renderer.showToast('注销失败，请手动退出');
+    }
+  }
+
   /* ─── States ─── */
 
   private _showLoginPrompt(): void {
+    this._els.profileCard.style.display = 'none';
     this._els.trustRing.innerHTML = '';
     this._els.trustBadge.textContent = '未登录';
     this._els.trustUser.textContent = '';
-    this._els.reqList.innerHTML = '<div class="nle-empty">🔒 请先登录 NodeLoc 论坛</div>';
+    this._els.reqList.innerHTML = `
+      <div class="nle-empty">🔒 请先登录 NodeLoc 论坛</div>
+      <div style="text-align:center;margin-top:8px">
+        <button class="nle-profile-btn" id="nle-btn-login" style="flex:none;padding:6px 24px">⏻ 登录</button>
+      </div>
+    `;
+    this._els.reqList.querySelector('#nle-btn-login')?.addEventListener('click', () => this._login());
     this._els.readingToday.textContent = '--';
     this._els.readingLevel.textContent = '';
+  }
+
+  private _login(): void {
+    if (!CURRENT_SITE) return;
+    const ret = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.href = `${CURRENT_SITE.origin}/login?return_path=${ret}`;
   }
 
   private _showError(msg: string): void {

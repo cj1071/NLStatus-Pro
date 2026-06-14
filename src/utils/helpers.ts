@@ -98,6 +98,13 @@ export const Utils = {
     return n.toLocaleString('zh-CN');
   },
 
+  daysSince(utcStr: string): number {
+    if (!utcStr) return 0;
+    const d = new Date(utcStr);
+    if (Number.isNaN(d.getTime())) return 0;
+    return Math.max(0, Math.floor((Date.now() - d.getTime()) / 86400000));
+  },
+
   buildLetterAvatar(seed: string, size = 40): string {
     const text = Utils.sanitize(String(seed || ''), 100) || '?';
     const char = (Array.from(text)[0] || '?').toUpperCase();

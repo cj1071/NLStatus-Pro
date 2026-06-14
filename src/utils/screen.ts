@@ -21,9 +21,9 @@ export const Screen = {
 
   getPanelConfig(): PanelConfig {
     const w = this.getWidth();
-    if (w <= 480) return { width: 260, fontSize: 12, ringSize: 80 };
-    if (w <= 768) return { width: 280, fontSize: 13, ringSize: 100 };
-    if (w >= 1920) return { width: 340, fontSize: 15, ringSize: 140 };
-    return { width: 300, fontSize: 14, ringSize: 120 };
+    if (w <= 480) return { width: 260, fontSize: 12, ringSize: 72 };
+    if (w <= 768) return { width: 280, fontSize: 13, ringSize: 84 };
+    if (w >= 1920) return { width: 340, fontSize: 15, ringSize: 108 };
+    return { width: 300, fontSize: 14, ringSize: 92 };
   },
 };
