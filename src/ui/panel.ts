@@ -83,6 +83,10 @@ export default class Panel {
     return this._els;
   }
 
+  isMounted(): boolean {
+    return !!this._el && document.body.contains(this._el);
+  }
+
   constructor() {
     this.storage = new Storage();
     this._network = new Network();

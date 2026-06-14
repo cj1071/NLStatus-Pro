@@ -1,11 +1,9 @@
 import { detectSite } from './site';
 import { TabLeader } from './utils/tabLeader';
-import { EventBus } from './utils/eventBus';
 import { Logger } from './utils/logger';
 import Panel from './ui/panel';
 import { NavBarEnergy } from './ui/navBarEnergy';
 import { Network } from './utils/network';
-import { Storage } from './utils/storage';
 
 if (!detectSite()) {
   throw new Error('NodeLoc Enhance: unsupported site');
@@ -48,7 +46,7 @@ async function startup(): Promise<void> {
     if (lastUrl !== location.href) {
       lastUrl = location.href;
       // Re-inject if needed
-      if (panel && !document.body.contains(panel._el as unknown as Node)) {
+      if (panel && !panel.isMounted()) {
         // Panel was removed by Discourse's page transition
         Logger.log('Panel removed by page transition, but instance retained');
       }

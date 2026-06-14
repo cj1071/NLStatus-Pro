@@ -13,6 +13,8 @@ export interface UserStats {
   topic_count: number;
   post_count: number;
   recent_time_read: number;
+  not_silenced: number;
+  not_suspended: number;
 }
 
 export interface UserProfile {
@@ -34,6 +36,8 @@ export interface RequirementItem {
 }
 
 const labelMap: Record<string, string> = {
+  not_silenced: '未被禁言',
+  not_suspended: '未被封禁',
   topics_entered: '浏览话题',
   posts_read_count: '阅读帖子',
   time_read: '阅读时长',
@@ -47,13 +51,28 @@ const labelMap: Record<string, string> = {
 export class TrustLevelParser {
   constructor(private _network: Network) {}
 
+  private _isRestricted(user: Record<string, unknown>, keys: string[]): boolean {
+    return keys.some((key) => {
+      const val = user[key];
+      if (typeof val === 'boolean') return val;
+      if (typeof val === 'number') return val > 0;
+      if (typeof val === 'string') return val.length > 0;
+      return val != null;
+    });
+  }
+
   async fetchCurrentStats(username: string): Promise<UserStats | null> {
     if (!CURRENT_SITE) return null;
     try {
-      const url = `${CURRENT_SITE.origin}/u/${encodeURIComponent(username)}/summary.json`;
-      const data = await this._network.fetchJSON<any>(url, { cacheTtl: 300000 });
-      const summary = data?.user_summary;
+      const [summaryData, profileData] = await Promise.all([
+        this._network.fetchJSON<any>(`${CURRENT_SITE.origin}/u/${encodeURIComponent(username)}/summary.json`, { cacheTtl: 300000 }),
+        this._network.fetchJSON<any>(`${CURRENT_SITE.origin}/u/${encodeURIComponent(username)}.json`, { cacheTtl: 300000 }),
+      ]);
+      const summary = summaryData?.user_summary;
       if (!summary) throw new Error('无法获取用户统计');
+      const user = profileData?.user || {};
+      const isSilenced = this._isRestricted(user, ['silenced', 'silenced_till', 'silence_reason']);
+      const isSuspended = this._isRestricted(user, ['suspended', 'suspended_till', 'suspended_at', 'suspend_reason']);
       return {
         topics_entered: Utils.toSafeInt(summary.topics_entered),
         posts_read_count: Utils.toSafeInt(summary.posts_read_count),
@@ -64,6 +83,8 @@ export class TrustLevelParser {
         topic_count: Utils.toSafeInt(summary.topic_count),
         post_count: Utils.toSafeInt(summary.post_count),
         recent_time_read: Utils.toSafeInt(summary.recent_time_read),
+        not_silenced: isSilenced ? 0 : 1,
+        not_suspended: isSuspended ? 0 : 1,
       };
     } catch (e) {
       console.warn('[NLE] Failed to fetch summary stats:', (e as Error).message);
@@ -104,8 +125,10 @@ export class TrustLevelParser {
 
     return Object.entries(reqs).map(([key, required]) => {
       const current = (currentStats as any)[key] || 0;
+      const isStatus = key === 'not_silenced' || key === 'not_suspended';
       let display = current;
       if (key === 'time_read') display = Math.floor(current / 60);
+      else if (isStatus) display = current >= required ? 1 : 0;
       const requirementDisplay = key === 'time_read' ? Math.floor(required / 60) : required;
       return {
         key,
@@ -120,7 +143,7 @@ export class TrustLevelParser {
 
   getCompletionPercent(items: RequirementItem[]): number {
     if (!items.length) return 100;
-    const done = items.filter(i => i.isSuccess).length;
-    return Math.round((done / items.length) * 100);
+    const totalProgress = items.reduce((sum, item) => sum + Math.max(0, Math.min(1, item.progress)), 0);
+    return Math.round((totalProgress / items.length) * 1000) / 10;
   }
 }

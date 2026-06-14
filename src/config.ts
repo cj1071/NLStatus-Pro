@@ -22,12 +22,17 @@ export const CONFIG = {
   TRUST_LEVEL_NAMES: ['青铜', '白银', '黄金', '钻石', '王者'],
   TRUST_LEVEL_COLORS: ['#94a3b8', '#60a5fa', '#34d399', '#fbbf24', '#ef4444'],
   TRUST_LEVEL_REQUIREMENTS: {
-    1: { topics_entered: 10, posts_read_count: 100, time_read: 600 * 60 },
+    1: {
+      not_silenced: 1, not_suspended: 1,
+      topics_entered: 10, posts_read_count: 100, time_read: 600 * 60,
+    },
     2: {
+      not_silenced: 1, not_suspended: 1,
       topics_entered: 50, posts_read_count: 500, time_read: 3000 * 60,
       days_visited: 30, post_count: 10, likes_given: 10, likes_received: 10,
     },
     3: {
+      not_silenced: 1, not_suspended: 1,
       days_visited: 60, topic_count: 100, topics_entered: 500,
       posts_read_count: 20000, likes_given: 30, likes_received: 20,
     },

@@ -13,6 +13,7 @@ const _setValue = typeof GM_setValue === 'function'
 
 export class Storage {
   private _user: string | null = null;
+  private _userResolved = false;
   private _keyCache = new Map<string, { v: unknown; _t: number }>();
   private _writeQueue = new Map<string, unknown>();
   private _flushTimer: ReturnType<typeof setTimeout> | null = null;
@@ -114,11 +115,11 @@ export class Storage {
   }
 
   getUser(): string | null {
-    // 优先用 Discourse JS API（最可靠），其次 DOM 选择器
+    if (this._userResolved) return this._user;
+    this._userResolved = true;
     const live = this._getUserFromDiscourse() || this._getUserFromDom();
     if (live) { this._user = live; return live; }
     if (this._isAnon()) { this._user = null; return null; }
-    // DOM 找不到且不是匿名 → 可能是 header 还没渲染，用缓存兜底
     const cached = this._normalizeUsername(_getValue(this._globalKey('currentUser'), null));
     if (cached) { this._user = cached; return cached; }
     this._user = null;
@@ -128,6 +129,7 @@ export class Storage {
   setUser(username: string): void {
     const name = this._normalizeUsername(username);
     this._user = name;
+    this._userResolved = true;
     if (name) _setValue(this._globalKey('currentUser'), name);
   }
 }

@@ -18,12 +18,18 @@ export class Renderer {
     const cfg = Screen.getPanelConfig();
     const r = cfg.ringSize / 2 - 8;
     const circ = 2 * Math.PI * r;
-    const off = circ * (1 - pct / 100);
+    const clampedPct = Math.max(0, Math.min(100, pct));
+    const off = circ * (1 - clampedPct / 100);
     const colors = CONFIG.TRUST_LEVEL_COLORS;
     const levelNames = CONFIG.TRUST_LEVEL_NAMES;
     const currentLevel = user?.trust_level || 0;
     const color = colors[currentLevel] || colors[0];
-    const levelName = levelNames[currentLevel] || '未知';
+    const currentLevelName = levelNames[currentLevel] || '未知';
+    const nextLevel = Math.min(currentLevel + 1, levelNames.length - 1);
+    const nextLevelName = levelNames[nextLevel] || '未知';
+    const isMaxLevel = currentLevel >= levelNames.length - 1;
+    const displayPct = clampedPct.toFixed(1);
+    const currentLevelLabel = `Lv${currentLevel} · ${currentLevelName}`;
 
     this.$.trustRing.innerHTML = `
       <svg width="${cfg.ringSize}" height="${cfg.ringSize}" class="nle-ring-svg">
@@ -31,12 +37,14 @@ export class Renderer {
         <circle cx="${cfg.ringSize / 2}" cy="${cfg.ringSize / 2}" r="${r}" class="nle-ring-fg"
           stroke-width="8" stroke="${color}"
           stroke-dasharray="${circ}" stroke-dashoffset="${off}"/>
-        <text x="${cfg.ringSize / 2}" y="${cfg.ringSize / 2 - 6}" class="nle-ring-text">${pct}%</text>
-        <text x="${cfg.ringSize / 2}" y="${cfg.ringSize / 2 + 14}" class="nle-ring-label">${pct >= 100 ? '已达标' : '升级中'}</text>
+        <text x="${cfg.ringSize / 2}" y="${cfg.ringSize / 2 - 6}" class="nle-ring-text">${displayPct}%</text>
+        <text x="${cfg.ringSize / 2}" y="${cfg.ringSize / 2 + 14}" class="nle-ring-label">${currentLevelLabel}</text>
       </svg>
     `;
 
-    this.$.trustBadge.textContent = `Lv${currentLevel} · ${levelName}`;
+    this.$.trustBadge.textContent = isMaxLevel
+      ? `Lv${currentLevel} · 已达最高等级`
+      : `Lv${currentLevel} → Lv${nextLevel} · ${nextLevelName}`;
     this.$.trustBadge.style.background = `linear-gradient(135deg, ${color}, ${color}cc)`;
     this.$.trustUser.textContent = user?.name || user?.username || '--';
 
@@ -47,10 +55,13 @@ export class Renderer {
       for (const item of reqItems) {
         const cls = item.isSuccess ? 'met' : '';
         const check = item.isSuccess ? '✓' : '○';
+        const values = item.required <= 1 && (item.key === 'not_silenced' || item.key === 'not_suspended')
+          ? ''
+          : `${item.current}/${item.required}`;
         reqHTML += `
           <div class="nle-req-item ${cls}">
             <span class="nle-req-name">${Utils.escapeHtml(item.name)}</span>
-            <span class="nle-req-values">${item.current}/${item.required}</span>
+            <span class="nle-req-values">${values}</span>
             <div class="nle-req-bar-wrap"><div class="nle-req-bar" style="width:${Math.round(item.progress * 100)}%"></div></div>
             <span class="nle-req-check">${check}</span>
           </div>
