@@ -7,10 +7,11 @@ interface Milestones {
 export class Notifier {
   constructor(private _storage: Storage) {}
 
-  checkMilestones(reqs: Array<{ key: string; isSuccess: boolean; name: string; current: number }>): void {
+  checkMilestones(reqs: Array<{ key: string; isSuccess: boolean; name: string; current: number; countsTowardProgress?: boolean }>): void {
     const achieved = this._storage.get('nle_milestones', {}) as Milestones;
     let changed = false;
     for (const r of reqs) {
+      if (r.countsTowardProgress === false) continue;
       if (r.isSuccess && !achieved[r.key]) {
         achieved[r.key] = Date.now();
         changed = true;

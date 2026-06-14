@@ -351,13 +351,18 @@
 .nle-req-item.met .nle-req-check {
   color: var(--nle-ok);
 }
+.nle-req-item.info .nle-req-check {
+  color: var(--nle-warn);
+}
 .nle-req-name {
   flex: 1;
+  min-width: 0;
 }
 .nle-req-values {
   color: var(--nle-txt-mut);
   font-variant-numeric: tabular-nums;
   margin-right: 6px;
+  white-space: nowrap;
 }
 .nle-req-check {
   width: 16px;
@@ -385,6 +390,12 @@
   display: flex;
   gap: 4px;
   margin-bottom: 10px;
+}
+.nle-activity-subtabs {
+  flex-wrap: wrap;
+}
+.nle-activity-subtabs .nle-lb-subtab {
+  flex: 1 0 calc(25% - 4px);
 }
 .nle-lb-subtab {
   flex: 1;
@@ -476,6 +487,15 @@
 .nle-activity-title {
   font-weight: 500;
   margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nle-activity-excerpt {
+  color: var(--nle-txt-mut);
+  font-size: 11px;
+  line-height: 1.35;
+  margin-bottom: 3px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

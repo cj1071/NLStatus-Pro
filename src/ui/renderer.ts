@@ -5,7 +5,18 @@ import { Utils } from '../utils/helpers';
 import type { UserProfile, RequirementItem } from '../data/trustLevelParser';
 import type { LeaderboardData } from '../data/leaderboardFetcher';
 import type { FollowUser } from '../data/followFetcher';
+import type { ActivityItem, ActivityType } from '../data/activityFetcher';
 import type Panel from './panel';
+
+const activityIcons: Record<ActivityType, string> = {
+  read: '👁️',
+  bookmarks: '🔖',
+  replies: '💬',
+  likes: '❤️',
+  topics: '✏️',
+  reactions: '⚡',
+  notifications: '🔔',
+};
 
 export class Renderer {
   constructor(private _panel: Panel) {}
@@ -26,8 +37,8 @@ export class Renderer {
     const color = colors[currentLevel] || colors[0];
     const currentLevelName = levelNames[currentLevel] || '未知';
     const nextLevel = Math.min(currentLevel + 1, levelNames.length - 1);
-    const nextLevelName = levelNames[nextLevel] || '未知';
-    const isMaxLevel = currentLevel >= levelNames.length - 1;
+    const nextLevelName = user?.next_level_name || levelNames[nextLevel] || '未知';
+    const isMaxLevel = user?.max_level_reached || currentLevel >= levelNames.length - 1;
     const displayPct = clampedPct.toFixed(1);
     const currentLevelLabel = `Lv${currentLevel} · ${currentLevelName}`;
 
@@ -44,7 +55,9 @@ export class Renderer {
 
     this.$.trustBadge.textContent = isMaxLevel
       ? `Lv${currentLevel} · 已达最高等级`
-      : `Lv${currentLevel} → Lv${nextLevel} · ${nextLevelName}`;
+      : user?.leader_upgrade_needed
+        ? `Lv${currentLevel} · 等待审核`
+        : (user?.next_level_name ? `Lv${currentLevel} → ${nextLevelName}` : `Lv${currentLevel} → Lv${nextLevel} · ${nextLevelName}`);
     this.$.trustBadge.style.background = `linear-gradient(135deg, ${color}, ${color}cc)`;
     this.$.trustUser.textContent = user?.name || user?.username || '--';
 
@@ -53,16 +66,19 @@ export class Renderer {
       reqHTML = '<div class="nle-empty">🎉 已达成最高等级</div>';
     } else {
       for (const item of reqItems) {
-        const cls = item.isSuccess ? 'met' : '';
-        const check = item.isSuccess ? '✓' : '○';
-        const values = item.required <= 1 && (item.key === 'not_silenced' || item.key === 'not_suspended')
+        const cls = [item.isSuccess ? 'met' : '', item.isInfo ? 'info' : ''].filter(Boolean).join(' ');
+        const check = item.isSuccess ? '✓' : (item.isInfo ? '•' : '○');
+        const progress = Math.max(0, Math.min(1, item.progress));
+        const values = item.required === null
+          ? ''
+          : item.required <= 1 && (item.key === 'not_silenced' || item.key === 'not_suspended')
           ? ''
           : `${item.current}/${item.required}`;
         reqHTML += `
           <div class="nle-req-item ${cls}">
             <span class="nle-req-name">${Utils.escapeHtml(item.name)}</span>
             <span class="nle-req-values">${values}</span>
-            <div class="nle-req-bar-wrap"><div class="nle-req-bar" style="width:${Math.round(item.progress * 100)}%"></div></div>
+            <div class="nle-req-bar-wrap"><div class="nle-req-bar" style="width:${Math.round(progress * 100)}%"></div></div>
             <span class="nle-req-check">${check}</span>
           </div>
         `;
@@ -149,21 +165,19 @@ export class Renderer {
     this.$[type === 'energy' ? 'energyLb' : 'postingLb'].innerHTML = html || '<div class="nle-empty">暂无数据</div>';
   }
 
-  renderActivity(items: Array<{ title?: string; excerpt?: string; topic_title?: string; created_at?: string; updated_at?: string; action_type?: number; notification_type?: number; topic_id?: number }>): string {
+  renderActivity(items: ActivityItem[]): string {
     let html = '';
     for (const a of items) {
-      const title = a.title || a.excerpt || a.topic_title || '';
+      const title = a.title || a.excerpt || '';
       const time = Utils.formatRelativeTime(a.created_at || a.updated_at || '');
-      const actionType = a.action_type || a.notification_type;
-      let icon = '📄';
-      if (actionType === 2) icon = '❤️';
-      else if (actionType === 5) icon = '💬';
-      else if (actionType === 6) icon = '✏️';
-      else if (actionType === 9) icon = '🔖';
+      const icon = activityIcons[a.type] || '📄';
+      const meta = [time, a.meta, a.author].filter(Boolean).map((part) => Utils.escapeHtml(part || '')).join(' · ');
+      const excerpt = a.excerpt ? `<div class="nle-activity-excerpt">${Utils.escapeHtml(Utils.sanitize(a.excerpt, 120))}</div>` : '';
       html += `
-        <div class="nle-activity-item" data-topic-id="${a.topic_id || ''}">
+        <div class="nle-activity-item" data-topic-id="${a.topic_id || ''}" data-url="${Utils.escapeHtml(a.url || '')}">
           <div class="nle-activity-title">${icon} ${Utils.escapeHtml(Utils.sanitize(title, 80))}</div>
-          <div class="nle-activity-meta">${time}</div>
+          ${excerpt}
+          <div class="nle-activity-meta">${meta}</div>
         </div>
       `;
     }

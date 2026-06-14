@@ -17,7 +17,8 @@ import { Notifier } from '../tracking/notifier';
 import { Renderer } from './renderer';
 import { NavBarEnergy } from './navBarEnergy';
 
-import type { UserProfile, RequirementItem } from '../data/trustLevelParser';
+import type { UserProfile, RequirementItem, UserStats } from '../data/trustLevelParser';
+import type { ActivityItem, ActivityPage, ActivityType } from '../data/activityFetcher';
 import type { FollowUser } from '../data/followFetcher';
 
 const DRAG_THRESHOLD = 5;
@@ -54,9 +55,10 @@ export default class Panel {
   /* data caches */
   private _energyLoaded = false;
   private _postingLoaded = false;
-  private _activityType = 'bookmarks';
+  private _activityType: ActivityType = 'read';
   private _activityOffset = 0;
-  private _activityList: unknown[] = [];
+  private _activityBeforeId: number | null = null;
+  private _activityList: ActivityItem[] = [];
   private _followingList: FollowUser[] = [];
   private _followersList: FollowUser[] = [];
 
@@ -169,10 +171,14 @@ export default class Panel {
           <div id="nle-postingLb" style="display:none"></div>
         </div>
         <div class="nle-section" id="nle-sec-activity">
-          <div class="nle-lb-subtabs">
-            <button class="nle-lb-subtab active" data-activity-type="bookmarks">🔖 书签</button>
+          <div class="nle-lb-subtabs nle-activity-subtabs">
+            <button class="nle-lb-subtab active" data-activity-type="read">👁️ 已读</button>
+            <button class="nle-lb-subtab" data-activity-type="bookmarks">🔖 收藏</button>
+            <button class="nle-lb-subtab" data-activity-type="replies">💬 回复</button>
+            <button class="nle-lb-subtab" data-activity-type="likes">❤️ 点赞</button>
+            <button class="nle-lb-subtab" data-activity-type="topics">✏️ 主题</button>
+            <button class="nle-lb-subtab" data-activity-type="reactions">⚡ 互动</button>
             <button class="nle-lb-subtab" data-activity-type="notifications">🔔 通知</button>
-            <button class="nle-lb-subtab" data-activity-type="all">📋 全部</button>
           </div>
           <div id="nle-activityList"></div>
           <div id="nle-activityMore" style="text-align:center;padding:10px;display:none">
@@ -246,7 +252,7 @@ export default class Panel {
     }
 
     // leaderboard subtabs
-    for (const t of this._el.querySelectorAll<HTMLElement>('.nle-lb-subtab')) {
+    for (const t of this._el.querySelectorAll<HTMLElement>('[data-lb-tab]')) {
       t.addEventListener('click', () => {
         const lbType = t.dataset.lbTab!;
         this._activeLbType = lbType;
@@ -263,8 +269,9 @@ export default class Panel {
       t.addEventListener('click', () => {
         for (const b of t.parentElement!.querySelectorAll('[data-activity-type]')) b.classList.remove('active');
         t.classList.add('active');
-        this._activityType = t.dataset.activityType!;
+        this._activityType = t.dataset.activityType as ActivityType;
         this._activityOffset = 0;
+        this._activityBeforeId = null;
         this._loadActivity();
       });
     }
@@ -292,6 +299,7 @@ export default class Panel {
 
     // resize
     this._resizeHandler = Utils.debounce(() => {
+      this._applyMaxHeight();
       if (this._user && this._reqItems.length > 0) {
         this._renderer.renderTrustLevel(this._user, null, this._reqItems, this._lastPct);
       }
@@ -375,6 +383,8 @@ export default class Panel {
     this._el.classList.toggle('nle-collapsed', this._collapsed);
     this.storage.set('nle_collapsed', this._collapsed);
 
+    if (!this._collapsed) this._applyMaxHeight();
+
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         this._el.classList.remove('no-trans');
@@ -436,6 +446,7 @@ export default class Panel {
 
     this._el.style.left = Math.max(margin, Math.min(p.x - this._ox, maxLeft)) + 'px';
     this._el.style.top = Math.max(margin, Math.min(p.y - this._oy, maxTop)) + 'px';
+    this._applyMaxHeight();
   }
 
   private _endDrag(): void {
@@ -463,6 +474,7 @@ export default class Panel {
       this._el.style.right = Math.round(vw - rect.right) + 'px';
       this._el.style.left = 'auto';
     }
+    this._applyMaxHeight();
     this._savePosition();
   }
 
@@ -487,9 +499,22 @@ export default class Panel {
     });
   }
 
+  private _applyMaxHeight(): void {
+    if (this._el.classList.contains('nle-collapsed')) return;
+    const margin = 12;
+    const top = this._el.getBoundingClientRect().top;
+    const available = window.innerHeight - top - margin;
+    const cap = Math.round(window.innerHeight * 0.6);
+    const maxH = Math.max(120, Math.min(available, cap));
+    this._el.style.maxHeight = maxH + 'px';
+  }
+
   private _restorePosition(): void {
     const pos = this.storage.get('nle_panelPosition', null) as { anchorX?: number; alignRight?: boolean; topRatio?: number } | null;
-    if (!pos) return;
+    if (!pos) {
+      this._applyMaxHeight();
+      return;
+    }
 
     const vw = window.innerWidth;
     const vh = window.innerHeight;
@@ -516,6 +541,8 @@ export default class Panel {
       this._el.style.left = anchorX + 'px';
       this._el.style.right = 'auto';
     }
+
+    this._applyMaxHeight();
   }
 
   /* ─── Data Fetching ─── */
@@ -533,9 +560,9 @@ export default class Panel {
     this.storage.setUser(username);
 
     try {
-      const [profile, stats] = await Promise.all([
+      const [profile, officialProgress] = await Promise.all([
         this._trustParser.fetchUserProfile(username),
-        this._trustParser.fetchCurrentStats(username),
+        this._trustParser.fetchUpgradeProgress(username),
       ]);
 
       if (!profile) {
@@ -544,13 +571,32 @@ export default class Panel {
         return;
       }
 
-      this._user = profile;
-      const reqItems = this._trustParser.buildRequirementItems(stats, profile.trust_level);
-      const pct = this._trustParser.getCompletionPercent(reqItems);
+      let stats: UserStats | null = null;
+      let renderProfile = profile;
+      let reqItems: RequirementItem[];
+      let pct: number;
+
+      if (officialProgress) {
+        renderProfile = {
+          ...profile,
+          next_level_name: officialProgress.next_level_name,
+          upgrade_message: officialProgress.message,
+          leader_upgrade_needed: officialProgress.leader_upgrade_needed,
+          max_level_reached: officialProgress.max_level_reached,
+        };
+        reqItems = this._trustParser.buildOfficialRequirementItems(officialProgress);
+        pct = this._trustParser.getCompletionPercent(reqItems);
+      } else {
+        stats = await this._trustParser.fetchCurrentStats(username);
+        reqItems = this._trustParser.buildRequirementItems(stats, profile.trust_level);
+        pct = this._trustParser.getCompletionPercent(reqItems);
+      }
+
+      this._user = renderProfile;
       this._reqItems = reqItems;
       this._lastPct = pct;
 
-      this._renderer.renderTrustLevel(profile, stats, reqItems, pct);
+      this._renderer.renderTrustLevel(renderProfile, stats, reqItems, pct);
       this.tracker.init(username);
       this._notifier.checkMilestones(reqItems);
     } catch (e) {
@@ -577,33 +623,28 @@ export default class Panel {
     } catch { /* ignore */ }
   }
 
+  private async _fetchActivityPage(username: string, type: ActivityType): Promise<ActivityPage> {
+    if (type === 'read') return this._activityFetcher.fetchRead(this._activityOffset);
+    if (type === 'bookmarks') return this._activityFetcher.fetchBookmarks(username, this._activityOffset);
+    if (type === 'replies') return this._activityFetcher.fetchReplies(username, this._activityOffset);
+    if (type === 'likes') return this._activityFetcher.fetchLikes(username, this._activityOffset);
+    if (type === 'topics') return this._activityFetcher.fetchTopics(username, this._activityOffset);
+    if (type === 'reactions') return this._activityFetcher.fetchReactions(username, this._activityBeforeId);
+    return this._activityFetcher.fetchNotifications(username);
+  }
+
   private async _loadActivity(loadMore = false): Promise<void> {
-    if (!loadMore) this._activityOffset = 0;
+    if (!loadMore) {
+      this._activityOffset = 0;
+      this._activityBeforeId = null;
+    }
     const username = this.storage.getUser();
     if (!username) return;
 
-    const type = this._activityType || 'bookmarks';
+    const type = this._activityType || 'read';
     try {
-      let items: unknown[] = [];
-      let hasMore = false;
-
-      if (type === 'bookmarks') {
-        const result = await this._activityFetcher.fetchBookmarks(username, this._activityOffset);
-        items = result.bookmarks.map((b: any) => ({
-          topic_id: b.topic_id,
-          title: b.title || b.name || '书签',
-          excerpt: '',
-          created_at: b.updated_at,
-          action_type: 9,
-        }));
-        hasMore = result.more;
-      } else if (type === 'notifications') {
-        items = await this._activityFetcher.fetchNotifications(username);
-      } else {
-        const result = await this._activityFetcher.fetchActivity(username, this._activityOffset);
-        items = result.actions;
-        hasMore = result.more;
-      }
+      const result = await this._fetchActivityPage(username, type);
+      const items = result.items;
 
       if (loadMore) {
         this._activityList = [...this._activityList, ...items];
@@ -611,17 +652,24 @@ export default class Panel {
         this._activityList = items;
       }
 
-      this._els.activityList.innerHTML = this._renderer.renderActivity(this._activityList as any);
-      this._els.activityMore.style.display = hasMore ? '' : 'none';
+      this._els.activityList.innerHTML = this._renderer.renderActivity(this._activityList);
+      this._els.activityMore.style.display = result.more ? '' : 'none';
+
+      if (typeof result.nextPage === 'number') this._activityOffset = result.nextPage;
+      else if (typeof result.nextOffset === 'number') this._activityOffset = result.nextOffset;
+      if ('nextBeforeId' in result) this._activityBeforeId = result.nextBeforeId ?? null;
 
       for (const item of this._els.activityList.querySelectorAll<HTMLElement>('.nle-activity-item')) {
         item.addEventListener('click', () => {
+          const url = item.dataset.url;
+          if (url) {
+            window.open(url, '_blank');
+            return;
+          }
           const tid = item.dataset.topicId;
           if (tid && CURRENT_SITE) window.open(`${CURRENT_SITE.origin}/t/topic/${tid}`, '_blank');
         });
       }
-
-      this._activityOffset++;
     } catch { /* ignore */ }
   }
 
