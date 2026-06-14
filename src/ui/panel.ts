@@ -14,15 +14,12 @@ import { ActivityFetcher } from '../data/activityFetcher';
 import { FollowFetcher } from '../data/followFetcher';
 import { ReadingTracker } from '../tracking/readingTracker';
 import { Notifier } from '../tracking/notifier';
-import { AutoEngine } from '../features/autoEngine';
-import { DEFAULT_REFINER_RULES, ReplyRefiner } from '../features/replyRefiner';
 import { Renderer } from './renderer';
 import { NavBarEnergy } from './navBarEnergy';
 
 import type { UserProfile, RequirementItem } from '../data/trustLevelParser';
 import type { ActivityItem, ActivityPage, ActivityType } from '../data/activityFetcher';
 import type { FollowUser } from '../data/followFetcher';
-import type { RefinerRuleKey, RefinerRules } from '../features/replyRefiner';
 
 const DRAG_THRESHOLD = 5;
 
@@ -38,8 +35,6 @@ export default class Panel {
   private _notifier: Notifier;
   private _renderer: Renderer;
   private _navEnergy: NavBarEnergy;
-  private _autoEngine: AutoEngine;
-  private _replyRefiner: ReplyRefiner;
 
   /* DOM */
   private _el!: HTMLElement;
@@ -80,8 +75,6 @@ export default class Panel {
   private _readingTimer: ReturnType<typeof setInterval> | null = null;
   private _themeMediaListener!: (e: MediaQueryListEvent) => void;
   private _resizeHandler!: (() => void) & { cancel?: () => void };
-  private _settingsOutsideHandler: ((e: MouseEvent) => void) | null = null;
-  private _refinerUnsubscribe: (() => void) | null = null;
   private _loginRetryTimer: ReturnType<typeof setTimeout> | null = null;
   private _loginRetryCount = 0;
 
@@ -117,8 +110,6 @@ export default class Panel {
     this._notifier = new Notifier(this.storage);
     this._renderer = new Renderer(this);
     this._navEnergy = new NavBarEnergy(this._network);
-    this._autoEngine = new AutoEngine(this.storage);
-    this._replyRefiner = new ReplyRefiner(this._network, this.storage);
 
     this._initDOM();
     this._initTheme();
@@ -133,10 +124,6 @@ export default class Panel {
     });
 
     this.fetch();
-    this._autoEngine.start();
-    this._refinerUnsubscribe = this._replyRefiner.onChange(() => this._renderRefinerPanel());
-    this._renderRefinerRules();
-    void this._resumeReplyRefiner();
   }
 
   /* ─── DOM ─── */
@@ -157,7 +144,6 @@ export default class Panel {
         </div>
         <div class="nle-hdr-btns">
           <button id="nle-btn-refresh" title="刷新">🔄</button>
-          <button id="nle-btn-settings" title="设置">⚙️</button>
           <button id="nle-btn-theme" title="切换主题">🌓</button>
           <button class="nle-toggle" id="nle-btn-toggle" title="折叠面板">
             <span class="nle-toggle-arrow">◀</span>
@@ -166,30 +152,6 @@ export default class Panel {
         </div>
       </div>
       <div class="nle-progress" id="nle-progress"></div>
-      <div class="nle-settings" id="nle-settings" style="display:none">
-        <div class="nle-settings-title">⚙️ 设置</div>
-        <label class="nle-setting-row">
-          <span class="nle-setting-label">自动阅读
-            <span class="nle-setting-desc">模拟真人滚动浏览当前帖子</span>
-          </span>
-          <span class="nle-switch"><input type="checkbox" id="nle-set-autoRead"><span class="nle-switch-slider"></span></span>
-        </label>
-        <label class="nle-setting-row">
-          <span class="nle-setting-label">自动点赞
-            <span class="nle-setting-desc">浏览时按概率点赞，每小时上限 ${CONFIG.AUTO.LIKE_HOURLY_CAP}</span>
-          </span>
-          <span class="nle-switch"><input type="checkbox" id="nle-set-autoLike"><span class="nle-switch-slider"></span></span>
-        </label>
-        <div class="nle-setting-row">
-          <span class="nle-setting-label">阅读速度</span>
-          <div class="nle-speed-btns">
-            <button class="nle-speed-btn" data-speed="slow">慢</button>
-            <button class="nle-speed-btn active" data-speed="normal">适中</button>
-            <button class="nle-speed-btn" data-speed="fast">快</button>
-          </div>
-        </div>
-        <div class="nle-settings-status" id="nle-autoStatus">未运行</div>
-      </div>
       <div class="nle-profile-card" id="nle-profileCard">
         <div class="nle-profile-head">
           <img class="nle-profile-avatar" id="nle-profileAvatar" alt="">
@@ -210,7 +172,6 @@ export default class Panel {
         <button class="nle-tab" data-tab="leaderboard">🏆 排行</button>
         <button class="nle-tab" data-tab="activity">📋 活动</button>
         <button class="nle-tab" data-tab="follows">👥 关注</button>
-        <button class="nle-tab" data-tab="refiner">🧪 炼化</button>
       </div>
       <div class="nle-body">
         <div class="nle-section active" id="nle-sec-trust">
@@ -280,55 +241,12 @@ export default class Panel {
           </div>
           <div id="nle-followList"></div>
         </div>
-        <div class="nle-section" id="nle-sec-refiner">
-          <div class="nle-refiner-panel">
-            <div class="nle-refiner-hero">
-              <div>
-                <div class="nle-refiner-title">一键炼化</div>
-                <div class="nle-refiner-subtitle">持续隐藏低信息回复，刷新后继续生效</div>
-              </div>
-              <div class="nle-refiner-pill" id="nle-refinerStatus">未启用</div>
-            </div>
-            <div class="nle-refiner-actions">
-              <button class="nle-refiner-btn primary" id="nle-btn-refineReplies">启用炼化</button>
-              <button class="nle-refiner-btn" id="nle-btn-restoreReplies">恢复并清空</button>
-            </div>
-            <div class="nle-refiner-stats" id="nle-refinerStats"></div>
-            <div class="nle-refiner-card">
-              <div class="nle-refiner-card-head">
-                <span>审计记录</span>
-                <span class="nle-refiner-card-desc">误判可单条恢复</span>
-              </div>
-              <div class="nle-refiner-audit" id="nle-refinerAuditList"></div>
-            </div>
-            <div class="nle-refiner-card nle-refiner-rules">
-              <div class="nle-refiner-card-head">
-                <span>规则</span>
-                <span class="nle-refiner-card-desc">本地持久保存</span>
-              </div>
-              <div class="nle-refiner-rule-summary" id="nle-refinerRuleSummary"></div>
-              <label class="nle-refiner-rule"><span>感谢/谢谢分享</span><span class="nle-switch"><input type="checkbox" data-refiner-rule="shortThanks"><span class="nle-switch-slider"></span></span></label>
-              <label class="nle-refiner-rule"><span>回复可见/看看</span><span class="nle-switch"><input type="checkbox" data-refiner-rule="replyToView"><span class="nle-switch-slider"></span></span></label>
-              <label class="nle-refiner-rule"><span>顶帖/占楼/插眼</span><span class="nle-switch"><input type="checkbox" data-refiner-rule="bump"><span class="nle-switch-slider"></span></span></label>
-              <label class="nle-refiner-rule"><span>纯数字</span><span class="nle-switch"><input type="checkbox" data-refiner-rule="pureNumber"><span class="nle-switch-slider"></span></span></label>
-              <label class="nle-refiner-rule"><span>短随机串</span><span class="nle-switch"><input type="checkbox" data-refiner-rule="randomShort"><span class="nle-switch-slider"></span></span></label>
-              <label class="nle-refiner-rule"><span>系统提示/新人回复</span><span class="nle-switch"><input type="checkbox" data-refiner-rule="systemNotice"><span class="nle-switch-slider"></span></span></label>
-              <label class="nle-refiner-rule"><span>其他短低信息</span><span class="nle-switch"><input type="checkbox" data-refiner-rule="shortNoise"><span class="nle-switch-slider"></span></span></label>
-              <textarea class="nle-refiner-keywords" id="nle-refinerKeywordInput" rows="3" placeholder="自定义关键词，每行一个"></textarea>
-              <div class="nle-refiner-actions">
-                <button class="nle-refiner-btn primary" id="nle-btn-saveRefinerRules">保存规则</button>
-                <button class="nle-refiner-btn" id="nle-btn-clearRefinerKeywords">清空关键词</button>
-                <button class="nle-refiner-btn" id="nle-btn-resetRefinerRules">恢复默认</button>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     `;
     document.body.appendChild(this._el);
 
     const ids = [
-      'progress', 'settings', 'autoStatus',
+      'progress',
       'profileCard', 'profileAvatar', 'profileName', 'profileUsername', 'profileMeta', 'profileActions',
       'trustRing', 'trustBadge', 'trustUser', 'reqList',
       'readingToday', 'readingLevel', 'readingActive',
@@ -336,7 +254,6 @@ export default class Panel {
       'energyLb', 'postersLb', 'topicsLb', 'postingFilters',
       'activitySearch', 'activityStats', 'activityScroll', 'activityList', 'activityStatus', 'activityEnd',
       'followingCount', 'followersCount', 'followList',
-      'refinerStatus', 'refinerStats', 'refinerAuditList', 'refinerKeywordInput', 'refinerRuleSummary',
     ];
     for (const id of ids) {
       this._els[id] = this._el.querySelector(`#nle-${id}`)!;
@@ -363,10 +280,6 @@ export default class Panel {
 
   private _bindEvents(): void {
     this._el.querySelector('#nle-btn-refresh')!.addEventListener('click', () => this.fetch(true));
-    this._el.querySelector('#nle-btn-settings')!.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this._toggleSettings();
-    });
     this._el.querySelector('#nle-btn-theme')!.addEventListener('click', () => {
       const modes = ['auto', 'dark', 'light'];
       const idx = modes.indexOf(this._themeMode);
@@ -471,45 +384,6 @@ export default class Panel {
       });
     }
 
-    // settings toggles
-    const cfg = this._autoEngine.getConfig();
-    const readBox = this._el.querySelector<HTMLInputElement>('#nle-set-autoRead')!;
-    const likeBox = this._el.querySelector<HTMLInputElement>('#nle-set-autoLike')!;
-    readBox.checked = cfg.autoRead;
-    likeBox.checked = cfg.autoLike;
-    readBox.addEventListener('change', () => this._autoEngine.setConfig({ autoRead: readBox.checked }));
-    likeBox.addEventListener('change', () => this._autoEngine.setConfig({ autoLike: likeBox.checked }));
-
-    for (const btn of this._el.querySelectorAll<HTMLElement>('.nle-speed-btn')) {
-      btn.classList.toggle('active', btn.dataset.speed === cfg.speed);
-      btn.addEventListener('click', () => {
-        this._el.querySelectorAll('.nle-speed-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        this._autoEngine.setConfig({ speed: btn.dataset.speed as 'slow' | 'normal' | 'fast' });
-      });
-    }
-
-    this._autoEngine.onStatusChange((active) => {
-      this._els.autoStatus.textContent = active ? '● 运行中（仅帖子页）' : '○ 未运行';
-      this._els.autoStatus.classList.toggle('on', active);
-    });
-
-    this._el.querySelector('#nle-btn-refineReplies')!.addEventListener('click', () => { void this._refineReplies(); });
-    this._el.querySelector('#nle-btn-restoreReplies')!.addEventListener('click', () => this._restoreReplies());
-    this._el.querySelector('#nle-btn-saveRefinerRules')!.addEventListener('click', () => { void this._saveRefinerRules(); });
-    this._el.querySelector('#nle-btn-clearRefinerKeywords')!.addEventListener('click', () => { void this._clearRefinerKeywords(); });
-    this._el.querySelector('#nle-btn-resetRefinerRules')!.addEventListener('click', () => { void this._resetRefinerRules(); });
-    this._els.refinerAuditList.addEventListener('click', (e) => {
-      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-refiner-restore]');
-      if (!btn) return;
-      const key = btn.dataset.refinerRestore;
-      if (!key) return;
-      if (this._replyRefiner.restoreOne(key)) {
-        this._renderer.showToast('已恢复该楼层');
-        this._renderRefinerPanel();
-      }
-    });
-
     // follow tabs
     for (const s of this._el.querySelectorAll<HTMLElement>('.nle-follow-stat')) {
       s.addEventListener('click', () => {
@@ -603,7 +477,6 @@ export default class Panel {
     if (tab === 'leaderboard') this._loadLeaderboard();
     else if (tab === 'activity') this._loadActivity();
     else if (tab === 'follows') this._loadFollows();
-    else if (tab === 'refiner') this._renderRefinerPanel();
   }
 
   /* ─── Collapse ─── */
@@ -1002,7 +875,7 @@ export default class Panel {
   private _handleProfileAction(action: string): void {
     const username = this.storage.getUser();
     if (action === 'summary') {
-      if (username && CURRENT_SITE) window.open(`${CURRENT_SITE.origin}/u/${encodeURIComponent(username)}/summary`, '_blank');
+      this._renderer.showToast('总结功能开发中');
       return;
     }
     if (action === 'export') {
@@ -1013,222 +886,6 @@ export default class Panel {
       this._logout(username);
       return;
     }
-  }
-
-  private _toggleSettings(force?: boolean): void {
-    const el = this._els.settings;
-    const show = force ?? el.style.display === 'none';
-    el.style.display = show ? '' : 'none';
-    if (show) {
-      if (!this._settingsOutsideHandler) {
-        this._settingsOutsideHandler = (e: MouseEvent) => {
-          const t = e.target as Node;
-          const gear = this._el.querySelector('#nle-btn-settings')!;
-          if (!el.contains(t) && !gear.contains(t)) this._toggleSettings(false);
-        };
-        document.addEventListener('mousedown', this._settingsOutsideHandler);
-      }
-    } else if (this._settingsOutsideHandler) {
-      document.removeEventListener('mousedown', this._settingsOutsideHandler);
-      this._settingsOutsideHandler = null;
-    }
-  }
-
-  private async _resumeReplyRefiner(): Promise<void> {
-    try {
-      const result = await this._replyRefiner.resumeIfEnabled();
-      if (result) this._renderRefinerPanel();
-    } catch {
-      this._renderRefinerPanel();
-    }
-  }
-
-  private _renderRefinerPanel(): void {
-    if (!this._els.refinerStats || !this._els.refinerAuditList) return;
-
-    const stats = this._replyRefiner.getStats();
-    const items = this._replyRefiner.getAuditItems();
-    const sourceLabel = stats.source === 'api' ? '接口' : stats.source === 'dom' ? '页面' : '--';
-    const statusText = stats.enabled
-      ? stats.topicId ? `运行中 · #${stats.topicId}` : '运行中 · 等待话题页'
-      : '未启用';
-
-    this._els.refinerStatus.textContent = statusText;
-    this._els.refinerStatus.classList.toggle('active', stats.enabled);
-
-    const reasonText = Object.entries(stats.byReason)
-      .map(([reason, count]) => `${Utils.escapeHtml(reason)} ${count}`)
-      .join(' · ') || '暂无命中';
-
-    this._els.refinerStats.innerHTML = `
-      <div class="nle-refiner-stat"><span>扫描</span><b>${stats.scanned}</b></div>
-      <div class="nle-refiner-stat"><span>命中</span><b>${stats.matched}</b></div>
-      <div class="nle-refiner-stat"><span>隐藏</span><b>${stats.active}</b></div>
-      <div class="nle-refiner-stat"><span>恢复</span><b>${stats.restored}</b></div>
-      <div class="nle-refiner-stat wide"><span>来源</span><b>${sourceLabel}</b></div>
-      <div class="nle-refiner-stat wide"><span>原因</span><b>${reasonText}</b></div>
-    `;
-
-    if (items.length === 0) {
-      this._els.refinerAuditList.innerHTML = '<div class="nle-refiner-empty">暂无审计记录。启用后会实时记录被隐藏的楼层。</div>';
-      return;
-    }
-
-    this._els.refinerAuditList.innerHTML = items.slice(0, 80).map((item) => {
-      const postNo = item.postNumber ? `#${item.postNumber}` : '#--';
-      const text = Utils.escapeHtml(Utils.sanitize(item.text || '无文本预览', 90));
-      const reason = Utils.escapeHtml(item.reason);
-      const key = Utils.escapeHtml(item.key);
-      const restored = item.restored === true;
-      return `
-        <div class="nle-refiner-audit-item ${restored ? 'restored' : ''}">
-          <div class="nle-refiner-audit-main">
-            <div class="nle-refiner-audit-meta">
-              <span>${postNo}</span>
-              <span>${reason}</span>
-              <span>${restored ? '已恢复' : '隐藏中'}</span>
-            </div>
-            <div class="nle-refiner-audit-text">${text}</div>
-          </div>
-          <button class="nle-refiner-mini-btn" data-refiner-restore="${key}" ${restored ? 'disabled' : ''}>恢复</button>
-        </div>
-      `;
-    }).join('');
-  }
-
-  private _renderRefinerRules(): void {
-    const rules = this._replyRefiner.getRules();
-    for (const input of this._el.querySelectorAll<HTMLInputElement>('[data-refiner-rule]')) {
-      const key = input.dataset.refinerRule as RefinerRuleKey;
-      input.checked = rules[key];
-    }
-    (this._els.refinerKeywordInput as HTMLTextAreaElement).value = rules.customKeywords.join('\n');
-    this._renderRefinerRuleSummary(rules);
-  }
-
-  private _renderRefinerRuleSummary(rules = this._replyRefiner.getRules()): void {
-    if (!this._els.refinerRuleSummary) return;
-
-    const labels: Record<RefinerRuleKey, string> = {
-      shortThanks: '感谢套话',
-      replyToView: '回复可见',
-      bump: '顶帖占位',
-      pureNumber: '纯数字',
-      randomShort: '短随机串',
-      systemNotice: '系统提示',
-      shortNoise: '短低信息',
-    };
-    const enabled = (Object.keys(labels) as RefinerRuleKey[])
-      .filter(key => rules[key])
-      .map(key => labels[key]);
-    const keywords = rules.customKeywords.slice(0, 8);
-
-    const chips = [
-      ...enabled.map(label => `<span>${Utils.escapeHtml(label)}</span>`),
-      ...keywords.map(keyword => `<span>词: ${Utils.escapeHtml(keyword)}</span>`),
-    ];
-
-    this._els.refinerRuleSummary.innerHTML = chips.length
-      ? chips.join('')
-      : '<em>当前没有启用规则，保存后不会自动命中低信息回复。</em>';
-  }
-
-  private _collectRefinerRules(): RefinerRules {
-    const rules: RefinerRules = {
-      ...DEFAULT_REFINER_RULES,
-      customKeywords: [],
-    };
-    for (const input of this._el.querySelectorAll<HTMLInputElement>('[data-refiner-rule]')) {
-      const key = input.dataset.refinerRule as RefinerRuleKey;
-      rules[key] = input.checked;
-    }
-    rules.customKeywords = (this._els.refinerKeywordInput as HTMLTextAreaElement).value
-      .split(/\n+/)
-      .map(item => item.trim())
-      .filter(Boolean);
-    return rules;
-  }
-
-  private async _saveRefinerRules(): Promise<void> {
-    this._replyRefiner.setRules(this._collectRefinerRules());
-    this._renderRefinerRules();
-    this._renderer.showToast('规则已保存');
-    if (this._replyRefiner.getStats().enabled) {
-      await this._refineReplies(false);
-    } else {
-      this._renderRefinerPanel();
-    }
-  }
-
-  private async _clearRefinerKeywords(): Promise<void> {
-    (this._els.refinerKeywordInput as HTMLTextAreaElement).value = '';
-    this._replyRefiner.setRules(this._collectRefinerRules());
-    this._renderRefinerRules();
-    this._renderer.showToast('自定义关键词已清空');
-    if (this._replyRefiner.getStats().enabled) await this._refineReplies(false);
-  }
-
-  private async _resetRefinerRules(): Promise<void> {
-    this._replyRefiner.resetRules();
-    this._renderRefinerRules();
-    this._renderer.showToast('已恢复默认规则');
-    if (this._replyRefiner.getStats().enabled) await this._refineReplies(false);
-  }
-
-  private async _refineReplies(showToast = true): Promise<void> {
-    const btn = this._el.querySelector<HTMLButtonElement>('#nle-btn-refineReplies');
-    if (btn?.disabled) return;
-
-    const originalText = btn?.textContent || '炼化';
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = '炼化中';
-    }
-    this._els.refinerStatus.textContent = '扫描中';
-
-    try {
-      const result = await this._replyRefiner.refine();
-      const stats = this._replyRefiner.getStats();
-      const isTopic = /\/t(?:opic)?\//.test(location.pathname);
-      let msg: string;
-
-      if (!isTopic) {
-        msg = '仅话题页可用';
-      } else if (result.source === 'dom' && result.error) {
-        msg = result.hidden > 0
-          ? `接口读取失败，已炼化当前页面 ${result.hidden} 条`
-          : '接口读取失败，当前页面没有可炼化回复';
-      } else if (result.matched > 0) {
-        msg = stats.active > 0
-          ? `已识别 ${stats.matched} 条，当前隐藏 ${stats.active} 条，刷新后继续生效`
-          : `已识别 ${result.matched} 条，后续加载会自动隐藏`;
-      } else if (result.scanned === 0) {
-        msg = '没有可炼化的回复';
-      } else {
-        msg = `已扫描 ${result.scanned} 条，没有识别到低信息量回复`;
-      }
-
-      this._renderRefinerPanel();
-      this._els.refinerStatus.textContent = msg;
-      if (showToast) this._renderer.showToast(msg);
-    } catch (e) {
-      const msg = e instanceof Error ? `炼化失败：${e.message}` : '炼化失败';
-      this._els.refinerStatus.textContent = msg;
-      if (showToast) this._renderer.showToast(msg);
-    } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = originalText;
-      }
-    }
-  }
-
-  private _restoreReplies(): void {
-    const result = this._replyRefiner.restore();
-    const msg = result.restored > 0 ? `已恢复 ${result.restored} 条回复，审计已清空` : '已关闭炼化，审计已清空';
-    this._renderRefinerPanel();
-    this._els.refinerStatus.textContent = msg;
-    this._renderer.showToast(msg);
   }
 
   private _showProgress(): void {
@@ -1330,18 +987,11 @@ export default class Panel {
     if (this._readingTimer) clearInterval(this._readingTimer);
     this.tracker?.destroy();
     this._navEnergy?.stop();
-    this._autoEngine?.stop();
-    this._refinerUnsubscribe?.();
-    this._replyRefiner?.dispose();
     this.storage?.flush();
 
     if (this._resizeHandler?.cancel) this._resizeHandler.cancel();
     window.removeEventListener('resize', this._resizeHandler);
     window.removeEventListener('orientationchange', this._resizeHandler);
-    if (this._settingsOutsideHandler) {
-      document.removeEventListener('mousedown', this._settingsOutsideHandler);
-      this._settingsOutsideHandler = null;
-    }
     if (this._themeMediaListener) {
       window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', this._themeMediaListener);
     }

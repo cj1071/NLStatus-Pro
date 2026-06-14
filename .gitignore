@@ -3,3 +3,6 @@ dist
 *.local
 .DS_Store
 .claude/
+task_plan.md
+progress.md
+findings.md
