@@ -42,7 +42,7 @@ export class Renderer {
     this.$.profileName.textContent = user.name || user.username || '--';
     this.$.profileUsername.textContent = user.username ? `@${user.username}` : '';
 
-    const days = user.created_at ? Utils.daysSince(user.created_at) : 0;
+    const days = user.days_visited ?? (user.created_at ? Utils.daysSince(user.created_at) : 0);
     this.$.profileMeta.innerHTML = `
       <span>关注 <b>${Utils.formatNumber(user.total_following)}</b></span>
       <span>粉丝 <b>${Utils.formatNumber(user.total_followers)}</b></span>
@@ -191,7 +191,7 @@ export class Renderer {
     this.$[type === 'energy' ? 'energyLb' : 'postingLb'].innerHTML = html || '<div class="nle-empty">暂无数据</div>';
   }
 
-  renderActivity(items: ActivityItem[]): string {
+  renderActivity(items: ActivityItem[], emptyMsg?: string): string {
     let html = '';
     for (const a of items) {
       const title = a.title || a.excerpt || '';
@@ -207,7 +207,7 @@ export class Renderer {
         </div>
       `;
     }
-    return html || '<div class="nle-empty">暂无话题记录</div>';
+    return html || `<div class="nle-empty">${emptyMsg || '暂无话题记录'}</div>`;
   }
 
   renderFollowList(users: FollowUser[]): string {

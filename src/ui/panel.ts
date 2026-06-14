@@ -61,6 +61,11 @@ export default class Panel {
   private _activityOffset = 0;
   private _activityBeforeId: number | null = null;
   private _activityList: ActivityItem[] = [];
+  private _activitySearchTerm = '';
+  private _activityLoading = false;
+  private _activityHasMore = false;
+  private _searchTimer: ReturnType<typeof setTimeout> | null = null;
+  private _scrollHandler!: () => void;
   private _followingList: FollowUser[] = [];
   private _followersList: FollowUser[] = [];
 
@@ -162,6 +167,14 @@ export default class Panel {
           </span>
           <span class="nle-switch"><input type="checkbox" id="nle-set-autoLike"><span class="nle-switch-slider"></span></span>
         </label>
+        <div class="nle-setting-row">
+          <span class="nle-setting-label">阅读速度</span>
+          <div class="nle-speed-btns">
+            <button class="nle-speed-btn" data-speed="slow">慢</button>
+            <button class="nle-speed-btn active" data-speed="normal">适中</button>
+            <button class="nle-speed-btn" data-speed="fast">快</button>
+          </div>
+        </div>
         <div class="nle-settings-status" id="nle-autoStatus">未运行</div>
       </div>
       <div class="nle-profile-card" id="nle-profileCard">
@@ -218,9 +231,17 @@ export default class Panel {
             <button class="nle-lb-subtab" data-activity-type="reactions">⚡ 互动</button>
             <button class="nle-lb-subtab" data-activity-type="notifications">🔔 通知</button>
           </div>
-          <div id="nle-activityList"></div>
-          <div id="nle-activityMore" style="text-align:center;padding:10px;display:none">
-            <button id="nle-activityLoadmore" style="border:1px solid var(--nle-border);background:var(--nle-bg-card);color:var(--nle-txt);padding:4px 16px;border-radius:12px;cursor:pointer;font-size:12px">加载更多</button>
+          <div class="nle-activity-toolbar">
+            <div class="nle-activity-search-wrap">
+              <span class="nle-activity-search-icon">🔍</span>
+              <input type="text" id="nle-activitySearch" class="nle-activity-search-input" placeholder="搜索标题...">
+            </div>
+            <div class="nle-activity-stats" id="nle-activityStats">已加载 0 条</div>
+          </div>
+          <div class="nle-activity-scroll" id="nle-activityScroll">
+            <div id="nle-activityList"></div>
+            <div class="nle-activity-status" id="nle-activityStatus" style="display:none"></div>
+            <div class="nle-activity-status nle-activity-end" id="nle-activityEnd" style="display:none">— 没有更多了 —</div>
           </div>
         </div>
         <div class="nle-section" id="nle-sec-follows">
@@ -246,7 +267,8 @@ export default class Panel {
       'trustRing', 'trustBadge', 'trustUser', 'reqList',
       'readingToday', 'readingLevel', 'readingActive',
       'heatmapGrid', 'heatmapLabels', 'readingGoalBar',
-      'energyLb', 'postingLb', 'activityList', 'activityMore',
+      'energyLb', 'postingLb',
+      'activitySearch', 'activityStats', 'activityScroll', 'activityList', 'activityStatus', 'activityEnd',
       'followingCount', 'followersCount', 'followList',
     ];
     for (const id of ids) {
@@ -273,7 +295,7 @@ export default class Panel {
   /* ─── Events ─── */
 
   private _bindEvents(): void {
-    this._el.querySelector('#nle-btn-refresh')!.addEventListener('click', () => this.fetch());
+    this._el.querySelector('#nle-btn-refresh')!.addEventListener('click', () => this.fetch(true));
     this._el.querySelector('#nle-btn-settings')!.addEventListener('click', (e) => {
       e.stopPropagation();
       this._toggleSettings();
@@ -316,11 +338,37 @@ export default class Panel {
         this._activityType = t.dataset.activityType as ActivityType;
         this._activityOffset = 0;
         this._activityBeforeId = null;
+        this._activitySearchTerm = '';
+        this._activityHasMore = false;
+        if (this._searchTimer) clearTimeout(this._searchTimer);
+        (this._els.activitySearch as HTMLInputElement).value = '';
+        this._els.activityStats.textContent = '已加载 0 条';
         this._loadActivity();
       });
     }
 
-    this._el.querySelector('#nle-activityLoadmore')!.addEventListener('click', () => this._loadActivity(true));
+    // activity search
+    this._el.querySelector<HTMLInputElement>('#nle-activitySearch')!.addEventListener('input', () => {
+      if (this._searchTimer) clearTimeout(this._searchTimer);
+      this._searchTimer = setTimeout(() => {
+        this._activitySearchTerm = (this._els.activitySearch as HTMLInputElement).value.trim();
+        this._applyActivityFilterAndRender();
+        this._updateActivityEndState();
+        this._maybeAutoFill();
+      }, 600);
+    });
+
+    // scroll-to-load more (lazy load) — only the activity list scrolls
+    const scrollEl = this._els.activityScroll;
+    this._scrollHandler = () => {
+      if (this._activitySearchTerm) return;
+      if (this._activityLoading) return;
+      if (!this._activityHasMore) return;
+      if (scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight < 120) {
+        this._loadActivity(true);
+      }
+    };
+    scrollEl.addEventListener('scroll', this._scrollHandler, { passive: true });
 
     // profile action buttons
     for (const b of this._el.querySelectorAll<HTMLElement>('.nle-profile-btn')) {
@@ -338,6 +386,16 @@ export default class Panel {
     likeBox.checked = cfg.autoLike;
     readBox.addEventListener('change', () => this._autoEngine.setConfig({ autoRead: readBox.checked }));
     likeBox.addEventListener('change', () => this._autoEngine.setConfig({ autoLike: likeBox.checked }));
+
+    for (const btn of this._el.querySelectorAll<HTMLElement>('.nle-speed-btn')) {
+      btn.classList.toggle('active', btn.dataset.speed === cfg.speed);
+      btn.addEventListener('click', () => {
+        this._el.querySelectorAll('.nle-speed-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this._autoEngine.setConfig({ speed: btn.dataset.speed as 'slow' | 'normal' | 'fast' });
+      });
+    }
+
     this._autoEngine.onStatusChange((active) => {
       this._els.autoStatus.textContent = active ? '● 运行中（仅帖子页）' : '○ 未运行';
       this._els.autoStatus.classList.toggle('on', active);
@@ -612,10 +670,11 @@ export default class Panel {
 
   /* ─── Data Fetching ─── */
 
-  async fetch(): Promise<void> {
+  async fetch(force = false): Promise<void> {
     if (this._loading) return;
     this._loading = true;
     this._showProgress();
+    if (force) this._network.clearCache();
 
     const username = this.storage.getUser();
     if (!username) {
@@ -653,6 +712,9 @@ export default class Panel {
         };
         reqItems = this._trustParser.buildOfficialRequirementItems(officialProgress);
         pct = this._trustParser.getCompletionPercent(reqItems);
+
+        const visitItem = reqItems.find(it => it.name.includes('访问'));
+        if (visitItem) renderProfile = { ...renderProfile, days_visited: visitItem.current };
       }
 
       this._user = renderProfile;
@@ -698,6 +760,8 @@ export default class Panel {
   }
 
   private async _loadActivity(loadMore = false): Promise<void> {
+    if (this._activityLoading) return;
+
     if (!loadMore) {
       this._activityOffset = 0;
       this._activityBeforeId = null;
@@ -706,6 +770,13 @@ export default class Panel {
     if (!username) return;
 
     const type = this._activityType || 'read';
+
+    this._activityLoading = true;
+    if (loadMore) {
+      this._els.activityStatus.textContent = '加载中...';
+      this._els.activityStatus.style.display = '';
+      this._els.activityEnd.style.display = 'none';
+    }
     try {
       const result = await this._fetchActivityPage(username, type);
       const items = result.items;
@@ -716,25 +787,69 @@ export default class Panel {
         this._activityList = items;
       }
 
-      this._els.activityList.innerHTML = this._renderer.renderActivity(this._activityList);
-      this._els.activityMore.style.display = result.more ? '' : 'none';
+      this._activityHasMore = result.more;
 
       if (typeof result.nextPage === 'number') this._activityOffset = result.nextPage;
       else if (typeof result.nextOffset === 'number') this._activityOffset = result.nextOffset;
       if ('nextBeforeId' in result) this._activityBeforeId = result.nextBeforeId ?? null;
 
-      for (const item of this._els.activityList.querySelectorAll<HTMLElement>('.nle-activity-item')) {
-        item.addEventListener('click', () => {
-          const url = item.dataset.url;
-          if (url) {
-            window.open(url, '_blank');
-            return;
-          }
-          const tid = item.dataset.topicId;
-          if (tid && CURRENT_SITE) window.open(`${CURRENT_SITE.origin}/t/topic/${tid}`, '_blank');
-        });
-      }
-    } catch { /* ignore */ }
+      this._applyActivityFilterAndRender();
+      this._updateActivityEndState();
+    } catch {
+      // ignore
+    } finally {
+      this._activityLoading = false;
+      this._els.activityStatus.style.display = 'none';
+    }
+    this._maybeAutoFill();
+  }
+
+  /** 内容不足以滚动时，继续加载下一页直到撑满或无更多 */
+  private _maybeAutoFill(): void {
+    if (this._activeTab !== 'activity') return;
+    if (this._activitySearchTerm) return;
+    if (this._activityLoading) return;
+    if (!this._activityHasMore) return;
+    const scrollEl = this._els.activityScroll;
+    if (!scrollEl) return;
+    if (scrollEl.scrollHeight - scrollEl.clientHeight < 8) {
+      this._loadActivity(true);
+    }
+  }
+
+  private _applyActivityFilterAndRender(): void {
+    const search = this._activitySearchTerm.toLowerCase();
+    const filtered = search
+      ? this._activityList.filter((item) => {
+          const haystack = `${item.title} ${item.excerpt || ''}`.toLowerCase();
+          return haystack.includes(search);
+        })
+      : this._activityList;
+
+    const total = this._activityList.length;
+    let statsText = `已加载 ${total} 条`;
+    if (search) statsText += ` · 匹配 ${filtered.length} 条`;
+    this._els.activityStats.textContent = statsText;
+
+    const emptyMsg = search && filtered.length === 0
+      ? `🔍 未找到"${this._activitySearchTerm}"的相关记录`
+      : undefined;
+    this._els.activityList.innerHTML = this._renderer.renderActivity(filtered, emptyMsg);
+
+    for (const item of this._els.activityList.querySelectorAll<HTMLElement>('.nle-activity-item')) {
+      item.addEventListener('click', () => {
+        const url = item.dataset.url;
+        if (url) { window.open(url, '_blank'); return; }
+        const tid = item.dataset.topicId;
+        if (tid && CURRENT_SITE) window.open(`${CURRENT_SITE.origin}/t/topic/${tid}`, '_blank');
+      });
+    }
+  }
+
+  private _updateActivityEndState(): void {
+    const hasItems = this._activityList.length > 0;
+    const showEnd = !this._activitySearchTerm && hasItems && !this._activityHasMore;
+    this._els.activityEnd.style.display = showEnd ? '' : 'none';
   }
 
   private async _loadFollows(): Promise<void> {
@@ -896,6 +1011,9 @@ export default class Panel {
       document.removeEventListener('touchend', this._onTouchEnd);
       document.removeEventListener('touchcancel', this._onTouchEnd);
     }
+
+    if (this._searchTimer) clearTimeout(this._searchTimer);
+    this._els.activityScroll?.removeEventListener('scroll', this._scrollHandler);
 
     EventBus.clear();
     this._el?.remove();

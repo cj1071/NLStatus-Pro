@@ -5,6 +5,7 @@ import { Storage } from '../utils/storage';
 export interface AutoConfig {
   autoRead: boolean;
   autoLike: boolean;
+  speed: 'slow' | 'normal' | 'fast';
 }
 
 const A = CONFIG.AUTO;
@@ -43,6 +44,7 @@ export class AutoEngine {
     this._config = {
       autoRead: !!this._storage.get('nle_autoRead', false),
       autoLike: !!this._storage.get('nle_autoLike', false),
+      speed: (this._storage.get('nle_autoSpeed', null) as string) as AutoConfig['speed'] || 'normal',
     };
     this._updateTopicId();
   }
@@ -59,6 +61,7 @@ export class AutoEngine {
     Object.assign(this._config, patch);
     if (patch.autoRead !== undefined) this._storage.set('nle_autoRead', patch.autoRead);
     if (patch.autoLike !== undefined) this._storage.set('nle_autoLike', patch.autoLike);
+    if (patch.speed !== undefined) this._storage.set('nle_autoSpeed', patch.speed);
     this._evaluate();
   }
 
@@ -109,6 +112,11 @@ export class AutoEngine {
     return this._config.autoRead || this._config.autoLike;
   }
 
+  /** 当前速度预设 */
+  private _sp() {
+    return A.SPEED_PRESETS[this._config.speed] || A.SPEED_PRESETS.normal;
+  }
+
   private _evaluate(): void {
     if (this._enabled()) {
       if (!this._armed) {
@@ -147,7 +155,7 @@ export class AutoEngine {
   /** 是否已满足最低阅读时长 */
   private _hasReadEnough(): boolean {
     if (!this._enterTime) return false;
-    return (Date.now() - this._enterTime) / 1000 >= A.MIN_READ_SECONDS;
+    return (Date.now() - this._enterTime) / 1000 >= this._sp().minRead;
   }
 
   /** 标记当前话题已读完 */
@@ -267,11 +275,13 @@ export class AutoEngine {
       }
 
       // 正常滚动
-      const step = this._rand(A.SCROLL_STEP_MIN, A.SCROLL_STEP_MAX);
+      const sp = this._sp();
+      const step = this._rand(sp.stepMin, sp.stepMax);
       window.scrollBy({ top: step, behavior: 'smooth' });
     }
 
-    let delay = this._rand(A.LOOP_DELAY_MIN, A.LOOP_DELAY_MAX);
+    const sp2 = this._sp();
+    let delay = this._rand(sp2.delayMin, sp2.delayMax);
     if (this._config.autoRead && Math.random() < A.PAUSE_CHANCE) {
       delay += this._rand(A.PAUSE_EXTRA_MIN, A.PAUSE_EXTRA_MAX);
     }

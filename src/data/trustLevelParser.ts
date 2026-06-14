@@ -13,6 +13,7 @@ export interface UserProfile {
   created_at?: string;
   total_following: number;
   total_followers: number;
+  days_visited?: number;
   next_level_name?: string;
   upgrade_message?: string;
   leader_upgrade_needed?: boolean;

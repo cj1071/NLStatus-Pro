@@ -39,6 +39,11 @@ export const CONFIG = {
     LIKE_CLICK_DELAY_MIN: 400,
     LIKE_CLICK_DELAY_MAX: 1600,
     IDLE_RECHECK: 4000,
+    SPEED_PRESETS: {
+      slow: { stepMin: 50, stepMax: 130, delayMin: 3500, delayMax: 7000, minRead: 80 },
+      normal: { stepMin: 80, stepMax: 220, delayMin: 2200, delayMax: 5200, minRead: 50 },
+      fast: { stepMin: 160, stepMax: 360, delayMin: 1100, delayMax: 2600, minRead: 25 },
+    },
   },
   TRUST_LEVEL_NAMES: ['青铜', '白银', '黄金', '钻石', '王者'],
   TRUST_LEVEL_COLORS: ['#94a3b8', '#60a5fa', '#34d399', '#fbbf24', '#ef4444'],
