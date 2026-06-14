@@ -861,6 +861,7 @@ export default class Panel {
   private _loadFollowList(): void {
     const users = this._activeFollowTab === 'following' ? this._followingList : this._followersList;
     this._els.followList.innerHTML = this._renderer.renderFollowList(users || []);
+    this._renderer.bindImageFallbacks(this._els.followList);
 
     for (const item of this._els.followList.querySelectorAll<HTMLElement>('.nle-follow-item')) {
       item.addEventListener('click', () => {

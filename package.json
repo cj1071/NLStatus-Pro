@@ -1,6 +1,6 @@
 {
   "name": "nlstatus-pro",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "NodeLoc 论坛增强脚本 — 信任级别 · 阅读统计 · 能量值 · 排行榜 · 活动 · 关注",
   "private": true,
   "type": "module",

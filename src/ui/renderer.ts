@@ -25,6 +25,16 @@ export class Renderer {
     return this._panel.$;
   }
 
+  bindImageFallbacks(root: ParentNode): void {
+    for (const img of root.querySelectorAll('img[data-fallback-avatar]') as NodeListOf<HTMLImageElement>) {
+      img.addEventListener('error', () => {
+        const fallback = img.getAttribute('data-fallback-avatar') || '';
+        img.removeAttribute('data-fallback-avatar');
+        if (fallback) img.src = fallback;
+      }, { once: true });
+    }
+  }
+
   renderProfileCard(user: UserProfile | null): void {
     const card = this.$.profileCard;
     if (!user) {
@@ -180,10 +190,11 @@ export class Renderer {
       }
 
       const score = u.total_score ?? u.count ?? 0;
+      const fallbackAvatar = Utils.buildLetterAvatar(u.username);
       html += `
         <div class="nle-lb-item">
           <span class="nle-lb-rank ${rankCls}">${rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : String(rank)}</span>
-          <img class="nle-lb-avatar" src="${avatar}" loading="lazy" onerror="this.src='${Utils.buildLetterAvatar(u.username)}'">
+          <img class="nle-lb-avatar" src="${Utils.escapeHtml(avatar)}" loading="lazy" data-fallback-avatar="${Utils.escapeHtml(fallbackAvatar)}">
           <span class="nle-lb-name">${Utils.escapeHtml(u.name || u.username)}</span>
           <span class="nle-lb-score">${Utils.formatNumber(score)}</span>
         </div>
@@ -192,6 +203,7 @@ export class Renderer {
 
     const targetId = type === 'energy' ? 'energyLb' : type === 'posters' ? 'postersLb' : 'topicsLb';
     this.$[targetId].innerHTML = html || '<div class="nle-empty">暂无数据</div>';
+    this.bindImageFallbacks(this.$[targetId]);
   }
 
   renderActivity(items: ActivityItem[], emptyMsg?: string): string {
@@ -222,9 +234,10 @@ export class Renderer {
       } else {
         avatar = Utils.buildLetterAvatar(u.username);
       }
+      const fallbackAvatar = Utils.buildLetterAvatar(u.username);
       html += `
         <div class="nle-follow-item" data-username="${Utils.escapeHtml(u.username)}">
-          <img class="nle-follow-avatar" src="${avatar}" loading="lazy" onerror="this.src='${Utils.buildLetterAvatar(u.username)}'">
+          <img class="nle-follow-avatar" src="${Utils.escapeHtml(avatar)}" loading="lazy" data-fallback-avatar="${Utils.escapeHtml(fallbackAvatar)}">
           <span class="nle-follow-name">${Utils.escapeHtml(u.name || u.username)}</span>
         </div>
       `;
