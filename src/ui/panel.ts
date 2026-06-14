@@ -14,6 +14,7 @@ import { ActivityFetcher } from '../data/activityFetcher';
 import { FollowFetcher } from '../data/followFetcher';
 import { ReadingTracker } from '../tracking/readingTracker';
 import { Notifier } from '../tracking/notifier';
+import { AutoEngine } from '../features/autoEngine';
 import { Renderer } from './renderer';
 import { NavBarEnergy } from './navBarEnergy';
 
@@ -35,6 +36,7 @@ export default class Panel {
   private _notifier: Notifier;
   private _renderer: Renderer;
   private _navEnergy: NavBarEnergy;
+  private _autoEngine: AutoEngine;
 
   /* DOM */
   private _el!: HTMLElement;
@@ -67,6 +69,7 @@ export default class Panel {
   private _readingTimer: ReturnType<typeof setInterval> | null = null;
   private _themeMediaListener!: (e: MediaQueryListEvent) => void;
   private _resizeHandler!: (() => void) & { cancel?: () => void };
+  private _settingsOutsideHandler: ((e: MouseEvent) => void) | null = null;
 
   /* drag */
   private _dragging = false;
@@ -100,6 +103,7 @@ export default class Panel {
     this._notifier = new Notifier(this.storage);
     this._renderer = new Renderer(this);
     this._navEnergy = new NavBarEnergy(this._network);
+    this._autoEngine = new AutoEngine(this.storage);
 
     this._initDOM();
     this._initTheme();
@@ -114,6 +118,7 @@ export default class Panel {
     });
 
     this.fetch();
+    this._autoEngine.start();
   }
 
   /* ─── DOM ─── */
@@ -134,12 +139,30 @@ export default class Panel {
         </div>
         <div class="nle-hdr-btns">
           <button id="nle-btn-refresh" title="刷新">🔄</button>
+          <button id="nle-btn-settings" title="设置">⚙️</button>
           <button id="nle-btn-theme" title="切换主题">🌓</button>
           <button class="nle-toggle" id="nle-btn-toggle" title="折叠面板">
             <span class="nle-toggle-arrow">◀</span>
             <img class="nle-toggle-logo" src="${CURRENT_SITE.icon}" alt="NL" draggable="false">
           </button>
         </div>
+      </div>
+      <div class="nle-progress" id="nle-progress"></div>
+      <div class="nle-settings" id="nle-settings" style="display:none">
+        <div class="nle-settings-title">⚙️ 设置</div>
+        <label class="nle-setting-row">
+          <span class="nle-setting-label">自动阅读
+            <span class="nle-setting-desc">模拟真人滚动浏览当前帖子</span>
+          </span>
+          <span class="nle-switch"><input type="checkbox" id="nle-set-autoRead"><span class="nle-switch-slider"></span></span>
+        </label>
+        <label class="nle-setting-row">
+          <span class="nle-setting-label">自动点赞
+            <span class="nle-setting-desc">浏览时按概率点赞，每小时上限 ${CONFIG.AUTO.LIKE_HOURLY_CAP}</span>
+          </span>
+          <span class="nle-switch"><input type="checkbox" id="nle-set-autoLike"><span class="nle-switch-slider"></span></span>
+        </label>
+        <div class="nle-settings-status" id="nle-autoStatus">未运行</div>
       </div>
       <div class="nle-profile-card" id="nle-profileCard">
         <div class="nle-profile-head">
@@ -218,6 +241,7 @@ export default class Panel {
     document.body.appendChild(this._el);
 
     const ids = [
+      'progress', 'settings', 'autoStatus',
       'profileCard', 'profileAvatar', 'profileName', 'profileUsername', 'profileMeta', 'profileActions',
       'trustRing', 'trustBadge', 'trustUser', 'reqList',
       'readingToday', 'readingLevel', 'readingActive',
@@ -250,6 +274,10 @@ export default class Panel {
 
   private _bindEvents(): void {
     this._el.querySelector('#nle-btn-refresh')!.addEventListener('click', () => this.fetch());
+    this._el.querySelector('#nle-btn-settings')!.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._toggleSettings();
+    });
     this._el.querySelector('#nle-btn-theme')!.addEventListener('click', () => {
       const modes = ['auto', 'dark', 'light'];
       const idx = modes.indexOf(this._themeMode);
@@ -301,6 +329,19 @@ export default class Panel {
         this._handleProfileAction(b.dataset.action!);
       });
     }
+
+    // settings toggles
+    const cfg = this._autoEngine.getConfig();
+    const readBox = this._el.querySelector<HTMLInputElement>('#nle-set-autoRead')!;
+    const likeBox = this._el.querySelector<HTMLInputElement>('#nle-set-autoLike')!;
+    readBox.checked = cfg.autoRead;
+    likeBox.checked = cfg.autoLike;
+    readBox.addEventListener('change', () => this._autoEngine.setConfig({ autoRead: readBox.checked }));
+    likeBox.addEventListener('change', () => this._autoEngine.setConfig({ autoLike: likeBox.checked }));
+    this._autoEngine.onStatusChange((active) => {
+      this._els.autoStatus.textContent = active ? '● 运行中（仅帖子页）' : '○ 未运行';
+      this._els.autoStatus.classList.toggle('on', active);
+    });
 
     // follow tabs
     for (const s of this._el.querySelectorAll<HTMLElement>('.nle-follow-stat')) {
@@ -574,11 +615,13 @@ export default class Panel {
   async fetch(): Promise<void> {
     if (this._loading) return;
     this._loading = true;
+    this._showProgress();
 
     const username = this.storage.getUser();
     if (!username) {
       this._showLoginPrompt();
       this._loading = false;
+      this._hideProgress();
       return;
     }
     this.storage.setUser(username);
@@ -592,6 +635,7 @@ export default class Panel {
       if (!profile) {
         this._showLoginPrompt();
         this._loading = false;
+        this._hideProgress();
         return;
       }
 
@@ -623,6 +667,7 @@ export default class Panel {
       this._showError(ErrorFormatter.withIcon(e));
     } finally {
       this._loading = false;
+      this._hideProgress();
     }
   }
 
@@ -741,6 +786,33 @@ export default class Panel {
     }
   }
 
+  private _toggleSettings(force?: boolean): void {
+    const el = this._els.settings;
+    const show = force ?? el.style.display === 'none';
+    el.style.display = show ? '' : 'none';
+    if (show) {
+      if (!this._settingsOutsideHandler) {
+        this._settingsOutsideHandler = (e: MouseEvent) => {
+          const t = e.target as Node;
+          const gear = this._el.querySelector('#nle-btn-settings')!;
+          if (!el.contains(t) && !gear.contains(t)) this._toggleSettings(false);
+        };
+        document.addEventListener('mousedown', this._settingsOutsideHandler);
+      }
+    } else if (this._settingsOutsideHandler) {
+      document.removeEventListener('mousedown', this._settingsOutsideHandler);
+      this._settingsOutsideHandler = null;
+    }
+  }
+
+  private _showProgress(): void {
+    this._els.progress.classList.add('active');
+  }
+
+  private _hideProgress(): void {
+    this._els.progress.classList.remove('active');
+  }
+
   private async _logout(username: string | null): Promise<void> {
     if (!username || !CURRENT_SITE) return;
     if (!window.confirm('确定要注销登录吗？')) return;
@@ -804,11 +876,16 @@ export default class Panel {
     if (this._readingTimer) clearInterval(this._readingTimer);
     this.tracker?.destroy();
     this._navEnergy?.stop();
+    this._autoEngine?.stop();
     this.storage?.flush();
 
     if (this._resizeHandler?.cancel) this._resizeHandler.cancel();
     window.removeEventListener('resize', this._resizeHandler);
     window.removeEventListener('orientationchange', this._resizeHandler);
+    if (this._settingsOutsideHandler) {
+      document.removeEventListener('mousedown', this._settingsOutsideHandler);
+      this._settingsOutsideHandler = null;
+    }
     if (this._themeMediaListener) {
       window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', this._themeMediaListener);
     }
