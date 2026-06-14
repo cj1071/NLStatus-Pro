@@ -146,19 +146,20 @@ export class Renderer {
     }
   }
 
-  renderLeaderboard(data: LeaderboardData, type: 'energy' | 'posting'): void {
+  renderLeaderboard(data: LeaderboardData, type: 'energy' | 'posters' | 'topics'): void {
     const users = data?.users || [];
     const personal = data?.personal;
     let html = '';
 
     if (personal && personal.position) {
+      const score = personal.total_score ?? personal.count ?? 0;
       html += `
         <div class="nle-lb-personal">
           <span>🏅</span>
           <span class="nle-lb-personal-rank">#${personal.position}</span>
           <span>${Utils.escapeHtml(personal.username || '你')}</span>
           <span style="flex:1"></span>
-          <span style="font-weight:700;color:var(--nle-accent)">${Utils.formatNumber(personal.total_score)}</span>
+          <span style="font-weight:700;color:var(--nle-accent)">${Utils.formatNumber(score)}</span>
         </div>
       `;
     }
@@ -178,17 +179,19 @@ export class Renderer {
         avatar = Utils.buildLetterAvatar(u.username);
       }
 
+      const score = u.total_score ?? u.count ?? 0;
       html += `
         <div class="nle-lb-item">
           <span class="nle-lb-rank ${rankCls}">${rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : String(rank)}</span>
           <img class="nle-lb-avatar" src="${avatar}" loading="lazy" onerror="this.src='${Utils.buildLetterAvatar(u.username)}'">
           <span class="nle-lb-name">${Utils.escapeHtml(u.name || u.username)}</span>
-          <span class="nle-lb-score">${Utils.formatNumber(u.total_score)}</span>
+          <span class="nle-lb-score">${Utils.formatNumber(score)}</span>
         </div>
       `;
     }
 
-    this.$[type === 'energy' ? 'energyLb' : 'postingLb'].innerHTML = html || '<div class="nle-empty">暂无数据</div>';
+    const targetId = type === 'energy' ? 'energyLb' : type === 'posters' ? 'postersLb' : 'topicsLb';
+    this.$[targetId].innerHTML = html || '<div class="nle-empty">暂无数据</div>';
   }
 
   renderActivity(items: ActivityItem[], emptyMsg?: string): string {

@@ -6,7 +6,8 @@ export interface LeaderboardUser {
   username: string;
   name?: string;
   avatar_template?: string;
-  total_score: number;
+  total_score?: number;
+  count?: number;
   position: number;
 }
 
@@ -14,6 +15,9 @@ export interface LeaderboardData {
   personal: LeaderboardUser | null;
   users: LeaderboardUser[];
 }
+
+export type PostingPeriod = 'current_month' | 'previous_month' | 'all_time';
+export type PostingType = 'posters' | 'topics';
 
 export class LeaderboardFetcher {
   constructor(private _network: Network) {}
@@ -32,13 +36,13 @@ export class LeaderboardFetcher {
     }
   }
 
-  async fetchPostingLeaderboard(): Promise<LeaderboardData> {
+  async fetchPostingLeaderboard(type: PostingType, period: PostingPeriod): Promise<LeaderboardData> {
     if (!CURRENT_SITE) return { personal: null, users: [] };
     try {
-      const url = `${CURRENT_SITE.origin}/leaderboard/3.json`;
+      const url = `${CURRENT_SITE.origin}/posting-leaderboard?type=${type}&period=${period}&page=0`;
       const data = await this._network.fetchJSON<any>(url, { cacheTtl: CONFIG.CACHE.LEADERBOARD_TTL });
       return {
-        personal: data?.personal?.user || data?.personal || null,
+        personal: null,
         users: (data?.users || []).slice(0, 50),
       };
     } catch {
