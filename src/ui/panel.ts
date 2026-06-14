@@ -138,7 +138,7 @@ export default class Panel {
         <div class="nle-hdr-info">
           <img src="${CURRENT_SITE.icon}" alt="NL" class="nle-hdr-logo">
           <div>
-            <div class="nle-hdr-title">NodeLoc</div>
+            <div class="nle-hdr-title">NLStatus Pro</div>
             <div class="nle-hdr-ver">v${__APP_VERSION__}</div>
           </div>
         </div>

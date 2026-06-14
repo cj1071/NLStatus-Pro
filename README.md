@@ -1,6 +1,6 @@
-# NodeLoc Enhance
+# NLStatus Pro
 
-NodeLoc 社区增强脚本 - 信任等级追踪、阅读统计、能量值显示、排行榜、活动记录
+NodeLoc 状态增强脚本 - 信任等级追踪、阅读统计、能量值显示、排行榜、活动记录
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
@@ -82,8 +82,8 @@ NodeLoc 社区增强脚本 - 信任等级追踪、阅读统计、能量值显示
 **方式 1: 从源码构建**
 ```bash
 # 克隆仓库
-git clone https://github.com/cj1071/nodeloc-enhance.git
-cd nodeloc-enhance
+git clone https://github.com/cj1071/NLStatus-Pro.git
+cd NLStatus-Pro
 
 # 安装依赖
 pnpm install
@@ -91,12 +91,12 @@ pnpm install
 # 构建
 pnpm build
 
-# 生成的脚本在 dist/nodeloc-enhance.user.js
+# 生成的脚本在 dist/nlstatus-pro.user.js
 ```
 
 **方式 2: 下载 Release**
-1. 前往 [Releases](https://github.com/cj1071/nodeloc-enhance/releases) 页面
-2. 下载最新版本的 `nodeloc-enhance.user.js`
+1. 前往 [Releases](https://github.com/cj1071/NLStatus-Pro/releases) 页面
+2. 下载最新版本的 `nlstatus-pro.user.js`
 3. 用文本编辑器打开，复制全部内容
 4. 在 Tampermonkey 管理面板点击「新建脚本」，粘贴后保存
 
@@ -108,8 +108,7 @@ pnpm build
 
 ## 📸 功能截图
 
-![NodeLoc Enhance 面板截图](docs/screenshot-panel.png)
-
+![NLStatus Pro 面板截图](docs/screenshot-panel.png)
 
 ---
 
@@ -123,7 +122,7 @@ pnpm build
 
 ### 项目结构
 ```
-nodeloc-enhance/
+NLStatus-Pro/
 ├── src/
 │   ├── main.ts              # 入口文件
 │   ├── config.ts            # 全局配置
@@ -180,7 +179,7 @@ pnpm build
 ### 开发流程
 1. 修改 `src/` 下的源码
 2. 运行 `pnpm build` 构建
-3. 在 Tampermonkey 中更新脚本内容（复制 `dist/nodeloc-enhance.user.js`）
+3. 在 Tampermonkey 中更新脚本内容（复制 `dist/nlstatus-pro.user.js`）
 4. 刷新 NodeLoc 页面测试
 
 ### 调试技巧
@@ -219,7 +218,7 @@ pnpm build
 欢迎贡献代码、报告 Bug 或提出新功能建议！
 
 ### 报告 Bug
-在 [Issues](https://github.com/cj1071/nodeloc-enhance/issues) 页面创建新 issue，请包含：
+在 [Issues](https://github.com/cj1071/NLStatus-Pro/issues) 页面创建新 issue，请包含：
 - 问题描述
 - 复现步骤
 - 浏览器和油猴插件版本
@@ -257,8 +256,8 @@ pnpm build
 
 ## 📞 联系方式
 
-- **Issues**: [GitHub Issues](https://github.com/cj1071/nodeloc-enhance/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/cj1071/nodeloc-enhance/discussions)
+- **Issues**: [GitHub Issues](https://github.com/cj1071/NLStatus-Pro/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/cj1071/NLStatus-Pro/discussions)
 
 ---
 

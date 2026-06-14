@@ -6,7 +6,7 @@ import { NavBarEnergy } from './ui/navBarEnergy';
 import { Network } from './utils/network';
 
 if (!detectSite()) {
-  throw new Error('NodeLoc Enhance: unsupported site');
+  throw new Error('NLStatus Pro: unsupported site');
 }
 
 async function startup(): Promise<void> {

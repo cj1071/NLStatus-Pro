@@ -9,11 +9,11 @@ export default defineConfig({
     monkey({
       entry: 'src/main.ts',
       userscript: {
-        name: 'NodeLoc Enhance',
+        name: 'NLStatus Pro',
         namespace: 'https://www.nodeloc.com/',
         version: '1.0.0',
         description: '信任级别追踪 · 阅读统计 · 能量值显示 · 排行榜 · 我的活动 · 关注粉丝',
-        author: 'NL Enhance Team',
+        author: 'NLStatus Pro Team',
         license: 'MIT',
         match: [
           'https://www.nodeloc.com/*',
