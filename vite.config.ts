@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite';
 import monkey from 'vite-plugin-monkey';
+import pkg from './package.json';
 
 export default defineConfig({
   define: {
-    __APP_VERSION__: JSON.stringify('1.0.0'),
+    __APP_VERSION__: JSON.stringify(pkg.version),
   },
   plugins: [
     monkey({
@@ -11,10 +12,14 @@ export default defineConfig({
       userscript: {
         name: 'NLStatus Pro',
         namespace: 'https://www.nodeloc.com/',
-        version: '1.0.0',
+        version: pkg.version,
         description: '信任级别追踪 · 阅读统计 · 能量值显示 · 排行榜 · 我的活动 · 关注粉丝',
         author: 'NLStatus Pro Team',
         license: 'MIT',
+        homepage: 'https://github.com/cj1071/NLStatus-Pro',
+        supportURL: 'https://github.com/cj1071/NLStatus-Pro/issues',
+        updateURL: 'https://github.com/cj1071/NLStatus-Pro/releases/latest/download/nlstatus-pro.meta.js',
+        downloadURL: 'https://github.com/cj1071/NLStatus-Pro/releases/latest/download/nlstatus-pro.user.js',
         match: [
           'https://www.nodeloc.com/*',
           'https://nodeloc.com/*',

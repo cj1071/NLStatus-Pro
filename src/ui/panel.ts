@@ -659,7 +659,7 @@ export default class Panel {
     this._showProgress();
     if (force) this._network.clearCache();
 
-    const username = this.storage.getUser();
+    const username = await this.storage.resolveUser();
     if (!username) {
       this._showLoginPrompt();
       this._scheduleLoginRetry();
@@ -753,7 +753,7 @@ export default class Panel {
       this._activityOffset = 0;
       this._activityBeforeId = null;
     }
-    const username = this.storage.getUser();
+    const username = await this.storage.resolveUser();
     if (!username) return;
 
     const type = this._activityType || 'read';
@@ -840,7 +840,7 @@ export default class Panel {
   }
 
   private async _loadFollows(): Promise<void> {
-    const username = this.storage.getUser();
+    const username = await this.storage.resolveUser();
     if (!username) return;
 
     try {
@@ -872,8 +872,8 @@ export default class Panel {
 
   /* ─── Profile Actions ─── */
 
-  private _handleProfileAction(action: string): void {
-    const username = this.storage.getUser();
+  private async _handleProfileAction(action: string): Promise<void> {
+    const username = await this.storage.resolveUser();
     if (action === 'summary') {
       this._renderer.showToast('总结功能开发中');
       return;
@@ -941,11 +941,11 @@ export default class Panel {
     if (this._loginRetryCount >= 8) return;
 
     const delay = 500 + this._loginRetryCount * 500;
-    this._loginRetryTimer = setTimeout(() => {
+    this._loginRetryTimer = setTimeout(async () => {
       this._loginRetryTimer = null;
       if (this._destroyed) return;
 
-      const username = this.storage.getUser();
+      const username = await this.storage.resolveUser();
       if (username) {
         this._loginRetryCount = 0;
         void this.fetch(true);

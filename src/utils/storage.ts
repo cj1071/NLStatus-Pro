@@ -1,5 +1,6 @@
 import { CONFIG } from '../config';
 import { PATTERNS } from '../config';
+import { CURRENT_SITE } from '../site';
 import { Utils } from './helpers';
 
 // GM API fallback for dev mode (vite dev server runs ESM without Tampermonkey sandbox)
@@ -11,9 +12,21 @@ const _setValue = typeof GM_setValue === 'function'
   ? (k: string, v: string): void => { GM_setValue(k, v); }
   : (k: string, v: string): void => { localStorage.setItem(k, v); };
 
+interface CurrentSessionResponse {
+  current_user?: {
+    username?: string;
+    username_lower?: string;
+  } | null;
+  user?: {
+    username?: string;
+  } | null;
+  username?: string;
+}
+
 export class Storage {
   private _user: string | null = null;
   private _userResolved = false;
+  private _sessionUserPromise: Promise<string | null> | null = null;
   private _keyCache = new Map<string, { v: unknown; _t: number }>();
   private _writeQueue = new Map<string, unknown>();
   private _flushTimer: ReturnType<typeof setTimeout> | null = null;
@@ -114,22 +127,96 @@ export class Storage {
     return cls?.contains('anon') ?? false;
   }
 
+  private _getLiveUser(): string | null {
+    return this._getUserFromDiscourse() || this._getUserFromDom();
+  }
+
+  private _setResolvedUser(username: string): string {
+    this._user = username;
+    this._userResolved = true;
+    _setValue(this._globalKey('currentUser'), username);
+    return username;
+  }
+
+  private async _getUserFromSession(): Promise<string | null> {
+    if (!CURRENT_SITE) return null;
+    if (this._sessionUserPromise) return this._sessionUserPromise;
+
+    this._sessionUserPromise = (async () => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      try {
+        const resp = await fetch(`${CURRENT_SITE.origin}/session/current.json`, {
+          credentials: 'include',
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Discourse-Present': 'true',
+          },
+        });
+        if (!resp.ok) return null;
+        const data = await resp.json() as CurrentSessionResponse;
+        return this._normalizeUsername(
+          data.current_user?.username
+          || data.current_user?.username_lower
+          || data.user?.username
+          || data.username
+          || null
+        );
+      } catch {
+        return null;
+      } finally {
+        clearTimeout(timer);
+        this._sessionUserPromise = null;
+      }
+    })();
+
+    return this._sessionUserPromise;
+  }
+
   getUser(): string | null {
     if (this._userResolved) return this._user;
-    this._userResolved = true;
-    const live = this._getUserFromDiscourse() || this._getUserFromDom();
-    if (live) { this._user = live; return live; }
-    if (this._isAnon()) { this._user = null; return null; }
+    const live = this._getLiveUser();
+    if (live) return this._setResolvedUser(live);
+    if (this._isAnon()) {
+      this._user = null;
+      return null;
+    }
     const cached = this._normalizeUsername(_getValue(this._globalKey('currentUser'), null));
     if (cached) { this._user = cached; return cached; }
     this._user = null;
     return null;
   }
 
+  async resolveUser(): Promise<string | null> {
+    if (this._userResolved && this._user) return this._user;
+
+    const live = this._getLiveUser();
+    if (live) return this._setResolvedUser(live);
+
+    const sessionUser = await this._getUserFromSession();
+    if (sessionUser) return this._setResolvedUser(sessionUser);
+
+    if (this._isAnon()) {
+      this._user = null;
+      this._userResolved = false;
+      return null;
+    }
+
+    const cached = this._normalizeUsername(_getValue(this._globalKey('currentUser'), null));
+    if (cached) {
+      this._user = cached;
+      return cached;
+    }
+
+    this._user = null;
+    this._userResolved = false;
+    return null;
+  }
+
   setUser(username: string): void {
     const name = this._normalizeUsername(username);
-    this._user = name;
-    this._userResolved = true;
-    if (name) _setValue(this._globalKey('currentUser'), name);
+    if (name) this._setResolvedUser(name);
   }
 }
