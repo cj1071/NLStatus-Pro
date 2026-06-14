@@ -2,6 +2,15 @@ import { CONFIG } from '../config';
 import { PATTERNS } from '../config';
 import { Utils } from './helpers';
 
+// GM API fallback for dev mode (vite dev server runs ESM without Tampermonkey sandbox)
+const _getValue = typeof GM_getValue === 'function'
+  ? (k: string, d: string | null = null): string | null => GM_getValue(k, d)
+  : (k: string, d: string | null = null): string | null => localStorage.getItem(k) ?? d;
+
+const _setValue = typeof GM_setValue === 'function'
+  ? (k: string, v: string): void => { GM_setValue(k, v); }
+  : (k: string, v: string): void => { localStorage.setItem(k, v); };
+
 export class Storage {
   private _user: string | null = null;
   private _keyCache = new Map<string, { v: unknown; _t: number }>();
@@ -22,7 +31,7 @@ export class Storage {
     if (this._keyCache.has(k) && (Date.now() - this._keyCache.get(k)!._t) < CONFIG.CACHE.VALUE_TTL) {
       return this._keyCache.get(k)!.v;
     }
-    const raw = GM_getValue(k, null);
+    const raw = _getValue(k, null);
     if (raw === null) return defaultVal;
     try {
       const parsed = JSON.parse(raw);
@@ -54,7 +63,7 @@ export class Storage {
     if (this._flushTimer) { clearTimeout(this._flushTimer); this._flushTimer = null; }
     this._writeQueue.forEach((value, key) => {
       try {
-        GM_setValue(key, typeof value === 'string' ? value : JSON.stringify(value));
+        _setValue(key, typeof value === 'string' ? value : JSON.stringify(value));
       } catch (e) { console.warn('[NLE] Storage flush error:', e); }
     });
     this._writeQueue.clear();
@@ -70,16 +79,22 @@ export class Storage {
     return cleaned;
   }
 
+  private _getUserFromDiscourse(): string | null {
+    return this._normalizeUsername(
+      Utils.safeCall(() => (window as any).Discourse?.User?.current?.()?.username, null)
+    );
+  }
+
   private _getUserFromDom(): string | null {
-    const selectors = [
-      '.current-user a[href^="/u/"]',
-      '.d-header-icons .current-user a[href^="/u/"]',
-      '.header-dropdown-toggle.current-user[href^="/u/"]',
-      '.user-menu-wrapper a[href^="/u/"]',
+    // 仅从 header 区域匹配当前登录用户，避免匹配到帖子中的其他用户
+    const headerSelectors = [
+      '.d-header .current-user a[href^="/u/"]',
+      '.d-header .header-dropdown-toggle.current-user[href^="/u/"]',
       '.d-header .user-menu button[data-user-card]',
-      '[data-user-card]',
+      '.d-header .user-menu-wrapper a[href^="/u/"]',
+      '.d-header .h-user-wrapper a[href^="/u/"]',
     ];
-    for (const sel of selectors) {
+    for (const sel of headerSelectors) {
       const el = document.querySelector(sel);
       if (!el) continue;
       const card = el.getAttribute('data-user-card');
@@ -93,29 +108,26 @@ export class Storage {
     return null;
   }
 
-  private _getUserFromDiscourse(): string | null {
-    return this._normalizeUsername(
-      Utils.safeCall(() => (window as any).Discourse?.User?.current?.()?.username, null)
-    );
-  }
-
   private _isAnon(): boolean {
-    const cls = document.documentElement.classList || (document.body?.classList);
+    const cls = document.documentElement.classList;
     return cls?.contains('anon') ?? false;
   }
 
   getUser(): string | null {
-    const live = this._getUserFromDom() || this._getUserFromDiscourse();
+    // 优先用 Discourse JS API（最可靠），其次 DOM 选择器
+    const live = this._getUserFromDiscourse() || this._getUserFromDom();
     if (live) { this._user = live; return live; }
     if (this._isAnon()) { this._user = null; return null; }
-    const cached = this._normalizeUsername(GM_getValue(this._globalKey('currentUser'), null));
-    this._user = cached;
-    return cached;
+    // DOM 找不到且不是匿名 → 可能是 header 还没渲染，用缓存兜底
+    const cached = this._normalizeUsername(_getValue(this._globalKey('currentUser'), null));
+    if (cached) { this._user = cached; return cached; }
+    this._user = null;
+    return null;
   }
 
   setUser(username: string): void {
     const name = this._normalizeUsername(username);
     this._user = name;
-    if (name) GM_setValue(this._globalKey('currentUser'), name);
+    if (name) _setValue(this._globalKey('currentUser'), name);
   }
 }

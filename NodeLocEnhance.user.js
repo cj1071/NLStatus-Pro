@@ -431,26 +431,27 @@
             return cleaned;
         }
 
+        _getUserFromDiscourse() {
+            return this._normalizeUsername(
+                Utils.safeCall(() => window.Discourse?.User?.current?.()?.username, null)
+            );
+        }
+
         _getUserFromDom() {
-            // 策略1: 标准 Discourse header 用户菜单
-            const selectors = [
-                '.current-user a[href^="/u/"]',
-                '.d-header-icons .current-user a[href^="/u/"]',
-                '.header-dropdown-toggle.current-user[href^="/u/"]',
-                // NodeLoc glimmer header 变体
-                '.user-menu-wrapper a[href^="/u/"]',
+            // 仅从 header 区域匹配当前登录用户，避免匹配到帖子中的其他用户
+            const headerSelectors = [
+                '.d-header .current-user a[href^="/u/"]',
+                '.d-header .header-dropdown-toggle.current-user[href^="/u/"]',
                 '.d-header .user-menu button[data-user-card]',
-                // 通用: 任何带 data-user-card 属性的元素
-                '[data-user-card]'
+                '.d-header .user-menu-wrapper a[href^="/u/"]',
+                '.d-header .h-user-wrapper a[href^="/u/"]',
             ];
-            for (const sel of selectors) {
+            for (const sel of headerSelectors) {
                 const el = document.querySelector(sel);
                 if (!el) continue;
-                // 优先 data-user-card
                 const card = el.getAttribute('data-user-card');
                 const name = this._normalizeUsername(card || '');
                 if (name) return name;
-                // 其次 href
                 const href = el.getAttribute('href') || '';
                 const match = href.match(PATTERNS.USERNAME);
                 const fromHref = this._normalizeUsername(match?.[1] || '');
@@ -459,24 +460,21 @@
             return null;
         }
 
-        _getUserFromDiscourse() {
-            return this._normalizeUsername(
-                Utils.safeCall(() => window.Discourse?.User?.current?.()?.username, null)
-            );
-        }
-
         _isAnon() {
-            const cls = (document.documentElement.classList || document.body?.classList);
+            const cls = document.documentElement.classList;
             return cls && cls.contains('anon');
         }
 
         getUser() {
-            const live = this._getUserFromDom() || this._getUserFromDiscourse();
+            // 优先用 Discourse JS API（最可靠），其次 DOM 选择器
+            const live = this._getUserFromDiscourse() || this._getUserFromDom();
             if (live) { this._user = live; return live; }
             if (this._isAnon()) { this._user = null; return null; }
+            // DOM 找不到且不是匿名 → 可能是 header 还没渲染，用缓存兜底
             const cached = this._normalizeUsername(GM_getValue(this._globalKey('currentUser'), null));
-            this._user = cached;
-            return cached;
+            if (cached) { this._user = cached; return cached; }
+            this._user = null;
+            return null;
         }
 
         setUser(username) {

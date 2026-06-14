@@ -30,6 +30,7 @@ interface GMInfo {
 }
 
 declare const GM_info: GMInfo | undefined;
+declare const __APP_VERSION__: string;
 
 interface MonkeyWindow {
   unsafeWindow: Window;

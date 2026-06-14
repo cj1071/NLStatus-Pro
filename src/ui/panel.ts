@@ -123,7 +123,7 @@ export default class Panel {
           <img src="${CURRENT_SITE.icon}" alt="NL" class="nle-hdr-logo">
           <div>
             <div class="nle-hdr-title">NodeLoc</div>
-            <div class="nle-hdr-ver">v${(GM_info as any)?.script?.version || '1.0'}</div>
+            <div class="nle-hdr-ver">v${__APP_VERSION__}</div>
           </div>
         </div>
         <div class="nle-hdr-btns">
