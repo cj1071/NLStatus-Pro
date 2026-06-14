@@ -4,8 +4,10 @@
   "description": "NodeLoc 论坛增强脚本 — 信任级别 · 阅读统计 · 能量值 · 排行榜 · 活动 · 关注",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.27.0",
   "scripts": {
     "dev": "vite",
+    "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview"
   },

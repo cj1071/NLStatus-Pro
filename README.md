@@ -28,7 +28,6 @@ NodeLoc 社区增强脚本 - 信任等级追踪、阅读统计、能量值显示
 - **数据持久化**：本地存储，防止丢失
 - **热力图展示**：7 天阅读趋势可视化
 - **阅读等级**：从「初来乍到」到「深度学习」8 个等级
-- **速度配置**：慢/适中/快 三档可选
 - **防重复计时**：TabLeader 机制确保多标签页只计一次
 
 ### 🏆 排行榜
@@ -83,20 +82,20 @@ NodeLoc 社区增强脚本 - 信任等级追踪、阅读统计、能量值显示
 **方式 1: 从源码构建**
 ```bash
 # 克隆仓库
-git clone https://github.com/你的用户名/nodeloc-enhance.git
+git clone https://github.com/cj1071/nodeloc-enhance.git
 cd nodeloc-enhance
 
 # 安装依赖
-npm install
+pnpm install
 
 # 构建
-npm run build
+pnpm build
 
 # 生成的脚本在 dist/nodeloc-enhance.user.js
 ```
 
 **方式 2: 下载 Release**
-1. 前往 [Releases](https://github.com/你的用户名/nodeloc-enhance/releases) 页面
+1. 前往 [Releases](https://github.com/cj1071/nodeloc-enhance/releases) 页面
 2. 下载最新版本的 `nodeloc-enhance.user.js`
 3. 用文本编辑器打开，复制全部内容
 4. 在 Tampermonkey 管理面板点击「新建脚本」，粘贴后保存
@@ -109,7 +108,8 @@ npm run build
 
 ## 📸 功能截图
 
-> TODO: 添加截图展示核心功能
+![NodeLoc Enhance 面板截图](docs/screenshot-panel.png)
+
 
 ---
 
@@ -136,17 +136,19 @@ nodeloc-enhance/
 │   ├── tracking/            # 追踪统计
 │   │   ├── readingTracker.ts        # 阅读时间追踪
 │   │   └── notifier.ts              # 通知系统
-│   ├── features/            # 功能模块
-│   │   └── autoEngine.ts            # 自动化引擎
 │   ├── ui/                  # 界面组件
 │   │   ├── panel.ts                 # 主面板
 │   │   ├── renderer.ts              # 渲染器
 │   │   ├── navBarEnergy.ts          # 导航栏能量值
 │   │   └── styles.css               # 样式
+│   ├── types.ts             # 类型声明
 │   └── utils/               # 工具函数
 │       ├── helpers.ts               # 通用工具
 │       ├── storage.ts               # 本地存储
 │       ├── network.ts               # 网络请求
+│       ├── errors.ts                # 错误格式化
+│       ├── logger.ts                # 日志工具
+│       ├── lruCache.ts              # LRU 缓存
 │       ├── eventBus.ts              # 事件总线
 │       ├── tabLeader.ts             # 标签页领导者选举
 │       └── screen.ts                # 屏幕适配
@@ -163,21 +165,21 @@ nodeloc-enhance/
 
 ```bash
 # 安装依赖
-npm install
+pnpm install
 
 # 开发模式（监听文件变化自动重新构建）
-npm run dev
+pnpm dev
 
 # 类型检查
-npm run type-check
+pnpm typecheck
 
 # 构建生产版本
-npm run build
+pnpm build
 ```
 
 ### 开发流程
 1. 修改 `src/` 下的源码
-2. 运行 `npm run build` 构建
+2. 运行 `pnpm build` 构建
 3. 在 Tampermonkey 中更新脚本内容（复制 `dist/nodeloc-enhance.user.js`）
 4. 刷新 NodeLoc 页面测试
 
@@ -217,7 +219,7 @@ npm run build
 欢迎贡献代码、报告 Bug 或提出新功能建议！
 
 ### 报告 Bug
-在 [Issues](https://github.com/你的用户名/nodeloc-enhance/issues) 页面创建新 issue，请包含：
+在 [Issues](https://github.com/cj1071/nodeloc-enhance/issues) 页面创建新 issue，请包含：
 - 问题描述
 - 复现步骤
 - 浏览器和油猴插件版本
@@ -234,7 +236,7 @@ npm run build
 - 使用 TypeScript，保持类型安全
 - 遵循现有代码风格
 - 添加必要的注释
-- 确保 `npm run type-check` 通过
+- 确保 `pnpm typecheck` 通过
 - 功能完成后测试所有 Tab 和交互
 
 ---
@@ -255,8 +257,8 @@ npm run build
 
 ## 📞 联系方式
 
-- **Issues**: [GitHub Issues](https://github.com/你的用户名/nodeloc-enhance/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/你的用户名/nodeloc-enhance/discussions)
+- **Issues**: [GitHub Issues](https://github.com/cj1071/nodeloc-enhance/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/cj1071/nodeloc-enhance/discussions)
 
 ---
 
@@ -264,4 +266,4 @@ npm run build
 
 本脚本为个人学习项目，仅供技术交流使用。使用本脚本产生的任何问题由使用者自行承担。
 
-请遵守 NodeLoc 社区规则，合理使用自动化功能。
+请遵守 NodeLoc 社区规则，合理使用本脚本。
