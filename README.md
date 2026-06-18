@@ -2,6 +2,7 @@
 
 NodeLoc 状态增强脚本 - 信任等级追踪、阅读统计、能量值显示、排行榜、活动记录
 
+[![Version](https://img.shields.io/badge/Version-v1.0.3-22c55e)](https://github.com/cj1071/NLStatus-Pro/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.0-646CFF)](https://vitejs.dev/)
@@ -19,12 +20,13 @@ NodeLoc 状态增强脚本 - 信任等级追踪、阅读统计、能量值显示
 - 详细列出所有升级条件（已达成/未达成）
 - 可视化进度环形图
 - 支持强制刷新（绕过 API 缓存）
+- 内置信任等级说明入口：[了解论坛信任等级](https://www.nodeloc.com/t/topic/55183)
 
 ### 👤 用户信息卡
 - 显示头像、用户名、能量值
 - 关注数、粉丝数统计
 - 访问天数（与升级条件一致）
-- 快捷操作：登录/注销/总结/导出
+- 快捷操作：登录/注销/总结/Store/导出帖子
 
 ### 📖 阅读统计
 - **活跃度监听**：自动检测鼠标、键盘、滚动等操作
@@ -58,6 +60,17 @@ NodeLoc 状态增强脚本 - 信任等级追踪、阅读统计、能量值显示
 - 在页面顶部导航栏实时显示能量值
 - 自动刷新（每 5 分钟）
 - 点击打开侧边面板
+
+### 📥 帖子导出
+- 参考 LDStatusPro 的帖子导出方式
+- 当前话题页支持选择楼层范围
+- 支持 Markdown / HTML 导出
+- PDF 通过浏览器打印保存
+
+### 🏪 NodeLoc Store
+- 面板内保留快捷入口
+- 新标签打开 [store.nodeloc.com](https://store.nodeloc.com/)
+- 定位类似 LDStatusPro 的「士多」入口，主体交易功能由独立站点承载
 
 ### 🎨 主题切换
 - 自动模式（跟随系统）
@@ -210,6 +223,9 @@ pnpm build
 - [x] 关注/粉丝列表
 - [x] 用户信息卡与快捷操作
 - [x] 主题切换（深色/浅色/自动）
+- [x] 信任等级说明入口
+- [x] NodeLoc Store 入口
+- [x] 帖子导出（Markdown/HTML/PDF 打印）
 
 ### 🚧 规划中
 
@@ -219,7 +235,6 @@ pnpm build
   - 详见 [云同步实现计划](docs/cloud-sync-plan.md)
 - [ ] **AI 总结**：个性化用户活动总结（参考 LDStatusPro 吃瓜助手）
   - 详见 [AI 总结实现计划](docs/ai-summary-plan.md)
-- [ ] **导出功能**：导出个人数据报告（参考 LDStatusPro 导出格式）
 - [ ] **多语言支持**：英文界面
 
 ---

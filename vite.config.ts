@@ -9,6 +9,9 @@ export default defineConfig({
   plugins: [
     monkey({
       entry: 'src/main.ts',
+      build: {
+        metaFileName: true,
+      },
       userscript: {
         name: 'NLStatus Pro',
         namespace: 'https://www.nodeloc.com/',
@@ -44,5 +47,6 @@ export default defineConfig({
   ],
   build: {
     minify: false, // Greasy Fork 规则不允许混淆/压缩
+    cssMinify: false, // 同样关闭 CSS 压缩，否则内联样式会被压成一行，触发 GF 压缩检测
   },
 });
