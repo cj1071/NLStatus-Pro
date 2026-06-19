@@ -1,5 +1,6 @@
 import { CURRENT_SITE } from '../site';
 import { Storage } from '../utils/storage';
+import { AITopicSummary } from './aiTopicSummary';
 import { TopicExporter } from './topicExporter';
 
 const NODELOC_STORE_URL = 'https://store.nodeloc.com/';
@@ -13,6 +14,7 @@ interface ProfileActionsOptions {
 
 export class ProfileActions {
   private _topicExporter: TopicExporter | null = null;
+  private _aiTopicSummary: AITopicSummary | null = null;
 
   constructor(private _options: ProfileActionsOptions) {}
 
@@ -27,12 +29,13 @@ export class ProfileActions {
 
   destroy(): void {
     this._topicExporter?.destroy();
+    this._aiTopicSummary?.destroy();
   }
 
   private async _handleAction(action: string): Promise<void> {
     const username = await this._options.storage.resolveUser();
     if (action === 'summary') {
-      this._options.showToast('总结功能开发中');
+      this._ensureAITopicSummary().show();
       return;
     }
     if (action === 'export') {
@@ -57,6 +60,13 @@ export class ProfileActions {
       this._topicExporter = new TopicExporter(this._options.root, this._options.showToast);
     }
     return this._topicExporter;
+  }
+
+  private _ensureAITopicSummary(): AITopicSummary {
+    if (!this._aiTopicSummary) {
+      this._aiTopicSummary = new AITopicSummary(this._options.root, this._options.storage, this._options.showToast);
+    }
+    return this._aiTopicSummary;
   }
 
   private async _logout(username: string | null): Promise<void> {

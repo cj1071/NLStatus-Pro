@@ -15,6 +15,7 @@ interface GMXHRDetails {
   timeout?: number;
   onload?: (response: GMXHRResponse) => void;
   onerror?: (error: Error) => void;
+  ontimeout?: () => void;
 }
 
 interface GMXHRResponse {

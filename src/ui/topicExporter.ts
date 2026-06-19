@@ -52,6 +52,7 @@ interface ExportStatus {
 export class TopicExporter {
   private _overlay: HTMLElement;
   private _body: HTMLElement;
+  private _mountHost: HTMLElement;
   private _format: ExportFormat = 'html';
   private _embedImages = false;
   private _cache: TopicInfo | null = null;
@@ -61,6 +62,9 @@ export class TopicExporter {
     private _root: HTMLElement,
     private _showToast: (msg: string) => void,
   ) {
+    this._mountHost = this._root.querySelector<HTMLElement>('.nle-main')
+      || this._root.querySelector<HTMLElement>('.nle-body')
+      || this._root;
     this._overlay = document.createElement('div');
     this._overlay.className = 'nle-export-overlay';
     this._overlay.innerHTML = `
@@ -74,13 +78,14 @@ export class TopicExporter {
       <div class="nle-export-body"></div>
     `;
     this._body = this._overlay.querySelector('.nle-export-body')!;
-    this._root.appendChild(this._overlay);
+    this._mountHost.appendChild(this._overlay);
 
     this._overlay.querySelector('.nle-export-close')?.addEventListener('click', () => this.hide());
     this._overlay.querySelector('.nle-export-refresh')?.addEventListener('click', () => this._renderHome(true));
   }
 
   show(): void {
+    this._mountHost.classList.add('nle-subpanel-open');
     this._overlay.classList.add('show');
     void this._renderHome(false);
   }
@@ -89,6 +94,7 @@ export class TopicExporter {
     this._abort?.abort();
     this._abort = null;
     this._overlay.classList.remove('show');
+    this._mountHost.classList.remove('nle-subpanel-open');
   }
 
   destroy(): void {
