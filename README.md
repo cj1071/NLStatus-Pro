@@ -1,6 +1,6 @@
 # NLStatus Pro
 
-NodeLoc 状态增强脚本 - 信任等级追踪、阅读统计、能量值显示、排行榜、活动记录
+NodeLoc 状态增强脚本 - 信任等级追踪、阅读统计、能量值显示、排行榜、活动记录、帖子导出、AI 帖子总结
 
 [![Version](https://img.shields.io/badge/Version-v1.1.0-22c55e)](https://github.com/cj1071/NLStatus-Pro/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -26,7 +26,7 @@ NodeLoc 状态增强脚本 - 信任等级追踪、阅读统计、能量值显示
 - 显示头像、用户名、能量值
 - 关注数、粉丝数统计
 - 访问天数（与升级条件一致）
-- 快捷操作：登录/注销/总结/Store/导出帖子
+- 快捷操作：登录/注销/AI 总结/Store/导出帖子
 
 ### 📖 阅读统计
 - **活跃度监听**：自动检测鼠标、键盘、滚动等操作
@@ -66,6 +66,14 @@ NodeLoc 状态增强脚本 - 信任等级追踪、阅读统计、能量值显示
 - 当前话题页支持选择楼层范围
 - 支持 Markdown / HTML 导出
 - PDF 通过浏览器打印保存
+
+### 🤖 AI 帖子总结
+- 参考 LDStatusPro 吃瓜助手
+- 当前话题页支持选择楼层范围
+- 支持简略/详细总结模式
+- 支持 OpenAI 兼容 API、模型和提示词配置
+- 独立弹窗助手流式输出，支持 Markdown、表格、复制、字号调整、阅读模式
+- 历史记录本地保存，点击历史可重新打开弹窗并继续追问
 
 ### 🏪 NodeLoc Store
 - 面板内保留快捷入口
@@ -161,8 +169,12 @@ NLStatus-Pro/
 │   │   └── notifier.ts              # 通知系统
 │   ├── ui/                  # 界面组件
 │   │   ├── panel.ts                 # 主面板
+│   │   ├── panelTemplate.ts         # 面板模板
 │   │   ├── renderer.ts              # 渲染器
+│   │   ├── profileActions.ts        # 用户卡片快捷操作
 │   │   ├── navBarEnergy.ts          # 导航栏能量值
+│   │   ├── topicExporter.ts         # 帖子导出
+│   │   ├── aiTopicSummary.ts        # AI 帖子总结
 │   │   └── styles.css               # 样式
 │   ├── types.ts             # 类型声明
 │   └── utils/               # 工具函数
@@ -175,9 +187,9 @@ NLStatus-Pro/
 │       ├── eventBus.ts              # 事件总线
 │       ├── tabLeader.ts             # 标签页领导者选举
 │       └── screen.ts                # 屏幕适配
-├── docs/                    # 文档（规划中的功能）
+├── docs/                    # 文档（功能说明与规划）
 │   ├── cloud-sync-plan.md           # 云同步计划
-│   └── ai-summary-plan.md           # AI 总结计划
+│   └── ai-summary-plan.md           # AI 帖子总结说明
 ├── dist/                    # 构建输出
 ├── vite.config.ts           # Vite 配置
 ├── tsconfig.json            # TypeScript 配置
@@ -226,6 +238,8 @@ pnpm build
 - [x] 信任等级说明入口
 - [x] NodeLoc Store 入口
 - [x] 帖子导出（Markdown/HTML/PDF 打印）
+- [x] AI 帖子总结（楼层范围、流式弹窗、历史记录、继续追问）
+  - 详见 [AI 帖子总结功能说明](docs/ai-summary-plan.md)
 
 ### 🚧 规划中
 
@@ -233,8 +247,6 @@ pnpm build
 
 - [ ] **云同步**：跨设备同步阅读数据（需搭建 Cloudflare Workers 后端）
   - 详见 [云同步实现计划](docs/cloud-sync-plan.md)
-- [ ] **AI 总结**：个性化用户活动总结（参考 LDStatusPro 吃瓜助手）
-  - 详见 [AI 总结实现计划](docs/ai-summary-plan.md)
 - [ ] **多语言支持**：英文界面
 
 ---
