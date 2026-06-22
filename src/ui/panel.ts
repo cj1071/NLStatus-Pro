@@ -223,20 +223,28 @@ export default class Panel {
     if (this._destroyed) return;
     this._destroyed = true;
 
+    // 清理定时器
     if (this._refreshTimer) clearInterval(this._refreshTimer);
     if (this._readingTimer) clearInterval(this._readingTimer);
+
+    // 清理追踪器和工具
     this.tracker?.destroy();
     this._navEnergy?.stop();
     this._profileActions?.destroy();
     this.storage?.flush();
 
+    // 清理 UI 控制器（顺序重要：chrome 最后）
     this._resize?.destroy();
     this._theme?.destroy();
-    this._chrome?.destroy();
-
+    this._tabs?.destroy();
+    this._followPanel?.destroy();
+    this._leaderboardPanel?.destroy();
+    this._trustPanel?.destroy();
     this._activityPanel?.destroy();
     this._loginPrompt?.destroy();
+    this._chrome?.destroy();
 
+    // 清理全局状态
     EventBus.clear();
     this._el?.remove();
   }

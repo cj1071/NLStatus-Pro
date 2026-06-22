@@ -28,4 +28,10 @@ export class TabController {
     }
     this._options.onTabChange(tab);
   }
+
+  destroy(): void {
+    // 事件监听器绑定在 _options.root 内的元素上
+    // 当 root 被移除时会自动清理
+    // 此方法用于保持一致性和未来扩展
+  }
 }

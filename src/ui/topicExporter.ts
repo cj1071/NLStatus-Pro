@@ -1,6 +1,7 @@
 import { CURRENT_SITE } from '../site';
 import { Network } from '../utils/network';
 import { Utils } from '../utils/helpers';
+import { TopicHelpers } from '../utils/topicHelpers';
 
 type ExportFormat = 'md' | 'html' | 'pdf';
 
@@ -57,6 +58,7 @@ export class TopicExporter {
   private _embedImages = false;
   private _cache: TopicInfo | null = null;
   private _abort: AbortController | null = null;
+  private _imageCache = new Map<string, string>();
 
   constructor(
     private _root: HTMLElement,
@@ -99,44 +101,16 @@ export class TopicExporter {
 
   destroy(): void {
     this.hide();
+    this._imageCache.clear();
     this._overlay.remove();
   }
 
-  private _getTopicId(): number | null {
-    const path = window.location.pathname;
-    const match = path.match(/^\/t\/topic\/(\d+)(?:\/|$)/)
-      || path.match(/^\/t\/[^/]+\/(\d+)(?:\/|$)/)
-      || path.match(/^\/t\/(\d+)(?:\/|$)/);
-    const id = Utils.toSafeInt(match?.[1] || '', 0);
-    return id > 0 ? id : null;
-  }
-
-  private _origin(): string {
-    return CURRENT_SITE?.origin || window.location.origin;
-  }
-
-  private async _fetchJSON<T>(path: string, signal?: AbortSignal): Promise<T> {
-    const url = path.startsWith('http') ? path : `${this._origin()}${path}`;
-    const resp = await fetch(url, {
-      credentials: 'include',
-      signal,
-      headers: {
-        'Accept': 'application/json',
-        ...Network.buildAuthHeaders(url),
-      },
-    });
-    if (resp.status === 429) throw new Error('请求过于频繁，请稍后重试');
-    if (resp.status === 403) throw new Error('需要登录后查看');
-    if (!resp.ok) throw new Error(`请求失败 (${resp.status})`);
-    return resp.json() as Promise<T>;
-  }
-
   private async _getTopicInfo(refresh = false): Promise<TopicInfo | null> {
-    const topicId = this._getTopicId();
+    const topicId = TopicHelpers.getTopicId();
     if (!topicId) return null;
     if (!refresh && this._cache?.id === topicId) return this._cache;
 
-    const data = await this._fetchJSON<any>(`/t/topic/${topicId}.json`);
+    const data = await TopicHelpers.fetchJSON<any>(`/t/topic/${topicId}.json`);
     const tags = (data?.tags || [])
       .map((tag: unknown) => typeof tag === 'string' ? tag : (tag as { name?: string })?.name || '')
       .filter(Boolean);
@@ -156,7 +130,7 @@ export class TopicExporter {
   }
 
   private async _renderHome(refresh = false): Promise<void> {
-    const topicId = this._getTopicId();
+    const topicId = TopicHelpers.getTopicId();
     if (!topicId) {
       this._body.innerHTML = `
         <div class="nle-export-not-topic">
@@ -316,12 +290,12 @@ export class TopicExporter {
     progress: (state: ExportStatus) => void,
     signal: AbortSignal,
   ): Promise<TopicPost[]> {
-    const idData = await this._fetchJSON<{ post_ids?: number[] }>(
+    const idData = await TopicHelpers.fetchJSON<{ post_ids?: number[] }>(
       `/t/${topicId}/post_ids.json?post_number=0&limit=99999`,
       signal,
     );
     const allIds = [...(idData.post_ids || [])];
-    const topicData = await this._fetchJSON<any>(`/t/${topicId}.json`, signal);
+    const topicData = await TopicHelpers.fetchJSON<any>(`/t/${topicId}.json`, signal);
     const firstId = Utils.toSafeInt(topicData?.post_stream?.posts?.[0]?.id, 0);
     if (firstId && !allIds.includes(firstId)) allIds.unshift(firstId);
     const ids = allIds.slice(start - 1, end);
@@ -338,7 +312,7 @@ export class TopicExporter {
         detail: `第 ${Math.floor(i / 100) + 1} 批`,
       });
       const query = batchIds.map(id => `post_ids[]=${encodeURIComponent(String(id))}`).join('&');
-      const data = await this._fetchJSON<any>(`/t/${topicId}/posts.json?${query}&include_suggested=false`, signal);
+      const data = await TopicHelpers.fetchJSON<any>(`/t/${topicId}/posts.json?${query}&include_suggested=false`, signal);
       const batchPosts = data?.post_stream?.posts || [];
 
       for (const post of batchPosts) {
@@ -399,23 +373,32 @@ export class TopicExporter {
     if (/^https?:\/\//i.test(url)) return url;
     if (url.startsWith('//')) return `${window.location.protocol}${url}`;
     try {
-      return new URL(url, this._origin()).toString();
+      return new URL(url, TopicHelpers.getOrigin()).toString();
     } catch {
       return url;
     }
   }
 
   private async _imageToDataUrl(url: string): Promise<string> {
+    // 先检查缓存
+    if (this._imageCache.has(url)) {
+      return this._imageCache.get(url)!;
+    }
+
     try {
       const resp = await fetch(url, { credentials: 'include' });
       if (!resp.ok) return url;
       const blob = await resp.blob();
-      return await new Promise((resolve, reject) => {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(String(reader.result || url));
         reader.onerror = reject;
         reader.readAsDataURL(blob);
       });
+
+      // 缓存结果
+      this._imageCache.set(url, dataUrl);
+      return dataUrl;
     } catch {
       return url;
     }
@@ -437,7 +420,7 @@ export class TopicExporter {
 
   private _genMarkdown(data: ExportData): string {
     const { topic, posts, exportDate, postCount, range } = data;
-    const sourceUrl = `${this._origin()}/t/topic/${topic.id}`;
+    const sourceUrl = `${TopicHelpers.getOrigin()}/t/topic/${topic.id}`;
     const lines: string[] = [
       `# ${this._oneLine(topic.title) || '未命名话题'}`,
       '',
@@ -472,7 +455,7 @@ export class TopicExporter {
 
   private _genHTML(data: ExportData): string {
     const { topic, posts, exportDate, postCount, range } = data;
-    const sourceUrl = `${this._origin()}/t/topic/${topic.id}`;
+    const sourceUrl = `${TopicHelpers.getOrigin()}/t/topic/${topic.id}`;
     const tagsHtml = [
       topic.category ? `<span class="topic-tag">${Utils.escapeHtml(topic.category)}</span>` : '',
       ...topic.tags.map(tag => `<span class="topic-tag">${Utils.escapeHtml(tag)}</span>`),

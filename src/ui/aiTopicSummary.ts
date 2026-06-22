@@ -2,6 +2,7 @@ import { CURRENT_SITE } from '../site';
 import { Network } from '../utils/network';
 import { Storage } from '../utils/storage';
 import { Utils } from '../utils/helpers';
+import { TopicHelpers } from '../utils/topicHelpers';
 
 type SummaryMode = 'brief' | 'detailed';
 
@@ -81,6 +82,19 @@ export class AITopicSummary {
   private _viewerResizeUpHandler: (() => void) | null = null;
   private _viewerSuppressBackdropClick = false;
 
+  private static _cleanCookedRegex = {
+    lightbox: /<div class="lightbox-wrapper">\s*<a class="lightbox" href="([^"]+)"(?:\s+data-download-href="([^"]+)")?[^>]*title="([^"]*)"[^>]*>[\s\S]*?<\/a>\s*<\/div>/gi,
+    attachment: /<a class="attachment" href="([^"]+)"[^>]*>([^<]+)<\/a>/gi,
+    emoji: /<img[^>]+class="emoji[^>]*alt="([^"]*)"[^>]*>/gi,
+    quote: /<aside class="quote(?:-modified)?[^>]*>[\s\S]*?<blockquote>([\s\S]*?)<\/blockquote>[\s\S]*?<\/aside>/gi,
+    br: /<br\s*\/?>/gi,
+    closingTags: /<\/p>|<\/li>|<\/div>/gi,
+    allTags: /<[^>]+>/g,
+    trailingSpaces: /[ \t]+\n/g,
+    multipleNewlines: /\n{3,}/g,
+    multipleSpaces: /[ \t]{2,}/g,
+  };
+
   constructor(
     private _root: HTMLElement,
     private _storage: Storage,
@@ -114,7 +128,7 @@ export class AITopicSummary {
   }
 
   show(): void {
-    const topicId = this._getTopicId();
+    const topicId = TopicHelpers.getTopicId();
     if (this._topicCache && this._topicCache.id !== topicId) this._topicCache = null;
     this._lastUrl = location.href;
     this._mountHost.classList.add('nle-subpanel-open');
@@ -213,42 +227,13 @@ export class AITopicSummary {
     this._saveHistory();
   }
 
-  private _getTopicId(): number | null {
-    const path = window.location.pathname;
-    const match = path.match(/^\/t\/topic\/(\d+)(?:\/|$)/)
-      || path.match(/^\/t\/[^/]+\/(\d+)(?:\/|$)/)
-      || path.match(/^\/t\/(\d+)(?:\/|$)/);
-    const id = Utils.toSafeInt(match?.[1] || '', 0);
-    return id > 0 ? id : null;
-  }
-
-  private _origin(): string {
-    return CURRENT_SITE?.origin || window.location.origin;
-  }
-
-  private async _fetchJSON<T>(path: string, signal?: AbortSignal): Promise<T> {
-    const url = path.startsWith('http') ? path : `${this._origin()}${path}`;
-    const resp = await fetch(url, {
-      credentials: 'include',
-      signal,
-      headers: {
-        'Accept': 'application/json',
-        ...Network.buildAuthHeaders(url),
-      },
-    });
-    if (resp.status === 429) throw new Error('请求过于频繁，请稍后重试');
-    if (resp.status === 403) throw new Error('需要登录后查看');
-    if (!resp.ok) throw new Error(`请求失败 (${resp.status})`);
-    return resp.json() as Promise<T>;
-  }
-
   private async _getTopicInfo(refresh = false): Promise<TopicInfo | null> {
-    const topicId = this._getTopicId();
+    const topicId = TopicHelpers.getTopicId();
     if (!topicId) return null;
     if (!refresh && this._topicCache?.id === topicId) return this._topicCache;
 
     try {
-      const data = await this._fetchJSON<any>(`/t/${topicId}.json`);
+      const data = await TopicHelpers.fetchJSON<any>(`/t/${topicId}.json`);
       this._topicCache = {
         id: topicId,
         title: Utils.sanitize(data?.title || data?.fancy_title || '当前话题', 160),
@@ -283,7 +268,7 @@ export class AITopicSummary {
       this._lastUrl = location.href;
       this._topicCache = null;
       if (!this._overlay.classList.contains('show')) return;
-      if (!this._getTopicId()) return;
+      if (!TopicHelpers.getTopicId()) return;
       const active = this._overlay.querySelector<HTMLElement>('.nle-ai-tab.active');
       if (active?.dataset.tab === 'home') {
         this._stopUrlWatch();
@@ -299,7 +284,7 @@ export class AITopicSummary {
   }
 
   private async _renderHome(refresh: boolean): Promise<void> {
-    if (!this._getTopicId()) {
+    if (!TopicHelpers.getTopicId()) {
       this._startUrlWatch();
       this._body.innerHTML = `
         <div class="nle-ai-empty">
@@ -563,7 +548,7 @@ export class AITopicSummary {
 
     overlay.querySelector('#nle-ai-viewer-copy')?.addEventListener('click', () => this._copyViewerContent(data.title));
     overlay.querySelector('#nle-ai-viewer-goto')?.addEventListener('click', () => {
-      window.open(`${this._origin()}/t/${data.topicId}`, '_blank', 'noopener,noreferrer');
+      window.open(`${TopicHelpers.getOrigin()}/t/${data.topicId}`, '_blank', 'noopener,noreferrer');
     });
 
     const readingBtn = overlay.querySelector<HTMLButtonElement>('#nle-ai-viewer-reading');
@@ -806,13 +791,13 @@ export class AITopicSummary {
     progress: (text: string) => void,
   ): Promise<string> {
     progress('正在获取帖子列表...');
-    const idData = await this._fetchJSON<{ post_ids?: number[] }>(
+    const idData = await TopicHelpers.fetchJSON<{ post_ids?: number[] }>(
       `/t/${topicId}/post_ids.json?post_number=0&limit=99999`,
       signal,
     );
     const ids = [...(idData.post_ids || [])].slice(start - 1, end);
     if (start <= 1) {
-      const topicData = await this._fetchJSON<any>(`/t/${topicId}.json`, signal);
+      const topicData = await TopicHelpers.fetchJSON<any>(`/t/${topicId}.json`, signal);
       const firstId = Utils.toSafeInt(topicData?.post_stream?.posts?.[0]?.id, 0);
       if (firstId && !ids.includes(firstId)) ids.unshift(firstId);
     }
@@ -826,7 +811,7 @@ export class AITopicSummary {
       progress(`正在获取帖子内容 (${batchIndex}/${totalBatches})...`);
       const batch = ids.slice(i, i + 200);
       const query = batch.map(id => `post_ids[]=${encodeURIComponent(String(id))}`).join('&');
-      const data = await this._fetchJSON<any>(`/t/${topicId}/posts.json?${query}&include_suggested=false`, signal);
+      const data = await TopicHelpers.fetchJSON<any>(`/t/${topicId}/posts.json?${query}&include_suggested=false`, signal);
       const posts = Array.isArray(data?.post_stream?.posts) ? data.post_stream.posts : [];
       chunks.push(...posts.map((post: any) => this._formatPost(post)).filter(Boolean));
     }
@@ -846,27 +831,25 @@ export class AITopicSummary {
   }
 
   private _cleanCooked(html: string): string {
+    const r = AITopicSummary._cleanCookedRegex;
     let content = html;
-    content = content.replace(
-      /<div class="lightbox-wrapper">\s*<a class="lightbox" href="([^"]+)"(?:\s+data-download-href="([^"]+)")?[^>]*title="([^"]*)"[^>]*>[\s\S]*?<\/a>\s*<\/div>/gi,
-      (_match, hrefUrl, downloadHref, title) => {
-        const url = hrefUrl || `${this._origin()}${downloadHref || ''}`;
-        return `\n[图片: ${title || '图片'}](${url})\n`;
-      },
-    );
-    content = content.replace(/<a class="attachment" href="([^"]+)"[^>]*>([^<]+)<\/a>/gi, (_match, url, name) => `\n[附件: ${name.trim()}](${url})\n`);
-    content = content.replace(/<img[^>]+class="emoji[^>]*alt="([^"]*)"[^>]*>/gi, '$1 ');
-    content = content.replace(/<aside class="quote(?:-modified)?[^>]*>[\s\S]*?<blockquote>([\s\S]*?)<\/blockquote>[\s\S]*?<\/aside>/gi, (_match, quoteInner) => {
-      const quote = this._decodeHtml(String(quoteInner).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+    content = content.replace(r.lightbox, (_match, hrefUrl, downloadHref, title) => {
+      const url = hrefUrl || `${TopicHelpers.getOrigin()}${downloadHref || ''}`;
+      return `\n[图片: ${title || '图片'}](${url})\n`;
+    });
+    content = content.replace(r.attachment, (_match, url, name) => `\n[附件: ${name.trim()}](${url})\n`);
+    content = content.replace(r.emoji, '$1 ');
+    content = content.replace(r.quote, (_match, quoteInner) => {
+      const quote = this._decodeHtml(String(quoteInner).replace(r.allTags, ' ').replace(r.multipleSpaces, ' ').trim());
       return `\n[引用]\n${quote}\n[/引用]\n`;
     });
-    content = content.replace(/<br\s*\/?>/gi, '\n');
-    content = content.replace(/<\/p>|<\/li>|<\/div>/gi, '\n');
-    content = content.replace(/<[^>]+>/g, ' ');
+    content = content.replace(r.br, '\n');
+    content = content.replace(r.closingTags, '\n');
+    content = content.replace(r.allTags, ' ');
     return this._decodeHtml(content)
-      .replace(/[ \t]+\n/g, '\n')
-      .replace(/\n{3,}/g, '\n\n')
-      .replace(/[ \t]{2,}/g, ' ')
+      .replace(r.trailingSpaces, '\n')
+      .replace(r.multipleNewlines, '\n\n')
+      .replace(r.multipleSpaces, ' ')
       .trim();
   }
 
@@ -1141,7 +1124,7 @@ export class AITopicSummary {
         const action = btn.dataset.historyAction;
         if (action === 'view') this._showViewer({ ...record, timestamp: record.timestamp });
         if (action === 'copy') void navigator.clipboard.writeText(record.summary).then(() => this._showToast('已复制'));
-        if (action === 'goto') window.open(`${this._origin()}/t/${record.topicId}`, '_blank', 'noopener,noreferrer');
+        if (action === 'goto') window.open(`${TopicHelpers.getOrigin()}/t/${record.topicId}`, '_blank', 'noopener,noreferrer');
         if (action === 'delete') {
           this._history.splice(idx, 1);
           this._saveHistory();

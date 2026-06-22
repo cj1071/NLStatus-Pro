@@ -132,7 +132,7 @@ export class ActivityPanel {
     if (!this._activityHasMore) return;
     const scrollEl = this._options.els.activityScroll;
     if (!scrollEl) return;
-    if (scrollEl.scrollHeight - scrollEl.clientHeight < 8) {
+    if (scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight < 120) {
       this.load(true);
     }
   }
