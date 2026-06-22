@@ -348,6 +348,16 @@ export class TopicExporter {
     wrapper.innerHTML = html;
     wrapper.querySelectorAll('a.anchor, a[aria-hidden="true"].anchor').forEach(el => el.remove());
 
+    // 移除 lightbox 包装器，只保留图片
+    wrapper.querySelectorAll('.lightbox-wrapper').forEach(lightbox => {
+      const img = lightbox.querySelector('img');
+      if (img) {
+        lightbox.replaceWith(img);
+      } else {
+        lightbox.remove();
+      }
+    });
+
     for (const link of wrapper.querySelectorAll<HTMLAnchorElement>('a[href]')) {
       const href = link.getAttribute('href') || '';
       if (!href || href.startsWith('#')) continue;
