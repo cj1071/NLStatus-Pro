@@ -2,7 +2,7 @@
 
 NodeLoc 状态增强脚本 - 信任等级追踪、阅读统计、能量值显示、排行榜、活动记录、帖子导出、AI 帖子总结
 
-[![Version](https://img.shields.io/badge/Version-v1.2.0-22c55e)](https://github.com/cj1071/NLStatus-Pro/releases)
+[![Version](https://img.shields.io/badge/Version-v1.2.1-22c55e)](https://github.com/cj1071/NLStatus-Pro/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.0-646CFF)](https://vitejs.dev/)
@@ -159,77 +159,20 @@ NLStatus-Pro/
 │   ├── main.ts              # 入口文件
 │   ├── config.ts            # 全局配置
 │   ├── site.ts              # 站点检测
-│   ├── data/                # 数据获取层
-│   │   ├── trustLevelParser.ts      # 信任等级解析
-│   │   ├── leaderboardFetcher.ts    # 排行榜数据
-│   │   ├── activityFetcher.ts       # 活动数据
-│   │   └── followFetcher.ts         # 关注/粉丝数据
-│   ├── tracking/            # 追踪统计
-│   │   ├── readingTracker.ts        # 阅读时间追踪
-│   │   └── notifier.ts              # 通知系统
-│   ├── features/            # 功能模块
-│   │   ├── ai-summary/              # AI 帖子总结（模块化）
-│   │   │   ├── types.ts             # 类型定义
-│   │   │   ├── config.ts            # 配置管理
-│   │   │   ├── history.ts           # 历史记录
-│   │   │   ├── generator.ts         # AI 生成核心
-│   │   │   ├── viewer.ts            # 查看器 UI
-│   │   │   ├── markdown.ts          # Markdown 渲染
-│   │   │   └── index.ts             # 主协调器
-│   │   └── topic-export/            # 帖子导出（模块化）
-│   │       ├── types.ts             # 类型定义
-│   │       ├── fetcher.ts           # 数据获取
-│   │       ├── formatters.ts        # 格式转换
-│   │       ├── ui.ts                # UI 渲染
-│   │       └── index.ts             # 主协调器
-│   ├── ui/                  # 界面组件
-│   │   ├── panel/                   # 主面板
-│   │   │   ├── panel.ts             # 面板逻辑
-│   │   │   ├── template.ts          # 面板模板
-│   │   │   ├── chrome.ts            # 面板外壳
-│   │   │   └── renderer.ts          # 渲染器
-│   │   ├── panels/                  # 子面板
-│   │   │   ├── activityPanel.ts     # 活动面板
-│   │   │   ├── leaderboardPanel.ts  # 排行榜面板
-│   │   │   ├── trustPanel.ts        # 信任等级面板
-│   │   │   └── followPanel.ts       # 关注粉丝面板
-│   │   ├── components/              # 通用组件
-│   │   │   ├── profileActions.ts    # 用户卡片快捷操作
-│   │   │   ├── loginPrompt.ts       # 登录提示
-│   │   │   ├── tabController.ts     # Tab 切换控制器
-│   │   │   └── resizeController.ts  # 尺寸调整控制器
-│   │   └── nav/                     # 导航栏
-│   │       ├── navBarEnergy.ts      # 导航栏能量值
-│   │       └── themeController.ts   # 主题切换
-│   ├── styles/              # 样式文件（模块化）
-│   │   ├── variables.css            # CSS 变量
-│   │   ├── base.css                 # 基础样式
-│   │   ├── panel.css                # 主面板样式
-│   │   ├── header.css               # 面板头部
-│   │   ├── tabs.css                 # 标签导航
-│   │   ├── scrollbar.css            # 滚动条
-│   │   ├── profile-card.css         # 用户资料卡
-│   │   ├── trust-level.css          # 信任等级环形图
-│   │   ├── leaderboard.css          # 排行榜
-│   │   ├── activity.css             # 活动列表
-│   │   ├── ai-summary.css           # AI 总结样式
-│   │   ├── topic-export.css         # 帖子导出样式
-│   │   ├── shared.css               # 共享组件样式
-│   │   └── responsive.css           # 响应式设计
 │   ├── types.ts             # 类型声明
-│   └── utils/               # 工具函数
-│       ├── helpers.ts               # 通用工具
-│       ├── storage.ts               # 本地存储
-│       ├── network.ts               # 网络请求
-│       ├── errors.ts                # 错误格式化
-│       ├── logger.ts                # 日志工具
-│       ├── lruCache.ts              # LRU 缓存
-│       ├── eventBus.ts              # 事件总线
-│       ├── tabLeader.ts             # 标签页领导者选举
-│       └── screen.ts                # 屏幕适配
+│   ├── data/                # 数据层：信任等级、排行榜、活动、关注
+│   ├── tracking/            # 追踪统计：阅读时间追踪、通知系统
+│   ├── features/            # 功能模块
+│   │   ├── ai-summary/      # AI 帖子总结（模块化）
+│   │   └── topic-export/    # 帖子导出（模块化）
+│   ├── ui/                  # 界面组件
+│   │   ├── panel/           # 主面板（逻辑、模板、外壳、渲染器）
+│   │   ├── panels/          # 子面板（活动、排行榜、信任等级、关注）
+│   │   ├── components/      # 通用组件（用户卡片、登录提示、Tab控制器等）
+│   │   └── nav/             # 导航栏（能量值、主题切换）
+│   ├── styles/              # 样式文件（模块化，13个独立CSS）
+│   └── utils/               # 工具函数（通用、存储、网络、错误、日志等）
 ├── docs/                    # 文档（功能说明与规划）
-│   ├── cloud-sync-plan.md           # 云同步计划
-│   └── ai-summary-plan.md           # AI 帖子总结说明
 ├── dist/                    # 构建输出
 ├── vite.config.ts           # Vite 配置
 ├── tsconfig.json            # TypeScript 配置
@@ -292,6 +235,20 @@ pnpm build
 ---
 
 ## 📝 更新日志
+
+### v1.2.1 (2026-06-23)
+
+**🧹 代码质量优化**
+- 删除 117 行死代码（未使用的工具函数和类）
+- 消除 266 行重复 CSS（Toast/Loading/响应式样式重复定义）
+- 创建统一的话题信息卡片组件 `TopicInfoCard`
+- 提取 7 个共享 CSS 类（overlay-base、btn-close、topic-info 等）
+- 改进错误处理：静默失败改为日志记录
+
+**📦 构建优化**
+- 构建大小：251.95 KB → 247.27 KB（-4.68 KB，-1.86%）
+- CSS 架构优化：统一响应式样式到 responsive.css
+- 代码净减少：-30 行（消除重复后）
 
 ### v1.2.0 (2026-06-23)
 
