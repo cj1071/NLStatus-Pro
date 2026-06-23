@@ -21,7 +21,6 @@
   flex-direction: column;
   gap: 10px;
 }
-.nle-export-info,
 .nle-export-range,
 .nle-export-formats,
 .nle-export-option,
@@ -30,46 +29,6 @@
   border: 1px solid var(--nle-border);
   border-radius: 12px;
   background: var(--nle-bg-card);
-}
-.nle-export-info {
-  padding: 12px;
-}
-.nle-export-info-title {
-  font-weight: 700;
-  line-height: 1.45;
-}
-.nle-export-info-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 8px;
-}
-.nle-export-category,
-.nle-export-tag {
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 10px;
-}
-.nle-export-category {
-  background: var(--nle-accent);
-  color: #fff;
-}
-.nle-export-tag {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--nle-txt-mut);
-  border: 1px solid var(--nle-border);
-}
-.nle-export-info-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 8px;
-  color: var(--nle-txt-mut);
-  font-size: 12px;
-}
-.nle-export-info-row b {
-  color: var(--nle-txt);
-  font-variant-numeric: tabular-nums;
 }
 .nle-export-range {
   display: flex;

@@ -12,6 +12,7 @@ import { SummaryViewer } from './viewer';
 import { renderMarkdown } from './markdown';
 import type { SummaryMode, TopicInfo, HistoryRecord, ViewerPayload, ChatMessage } from './types';
 import { PROMPT_BRIEF, PROMPT_DETAILED } from './types';
+import { TopicInfoCard } from '../../ui/components/topic-info-card';
 
 export class AITopicSummary {
   private _overlay: HTMLElement;
@@ -206,14 +207,7 @@ export class AITopicSummary {
       const hasApi = config.apiUrl.trim().length > 0;
 
       this._body.innerHTML = `
-        <div class="nle-ai-info">
-          <div class="nle-ai-topic-title">${Utils.escapeHtml(info.title)}</div>
-          <div class="nle-ai-info-grid">
-            <div><span>楼层</span><b>${Utils.formatNumber(info.postsCount)}</b></div>
-            <div><span>浏览</span><b>${Utils.formatNumber(info.views)}</b></div>
-            <div><span>点赞</span><b>${Utils.formatNumber(info.likeCount)}</b></div>
-          </div>
-        </div>
+        ${TopicInfoCard.render(info, { compact: true, showTags: false })}
         ${hasApi ? '' : '<div class="nle-ai-warning">请先在"设置"里填写 OpenAI 兼容 API 地址。</div>'}
         <div class="nle-ai-range">
           <label>楼层范围</label>

@@ -4,6 +4,7 @@
 
 import type { TopicInfo, ExportFormat, ExportStatus } from './types';
 import { Utils } from '../../utils/helpers';
+import { TopicInfoCard } from '../../ui/components/topic-info-card';
 
 export class ExportUI {
   private _overlay: HTMLElement;
@@ -82,19 +83,8 @@ export class ExportUI {
     onEmbedImagesChange: (embed: boolean) => void,
     onExport: (start: number, end: number) => void,
   ): void {
-    const tagHtml = info.tags.map(tag => `<span class="nle-export-tag">${Utils.escapeHtml(tag)}</span>`).join('');
-    const categoryHtml = info.category
-      ? `<span class="nle-export-category">${Utils.escapeHtml(info.category)}</span>`
-      : '';
-
     this._body.innerHTML = `
-      <div class="nle-export-info">
-        <div class="nle-export-info-title">${Utils.escapeHtml(info.title)}</div>
-        <div class="nle-export-info-tags">${categoryHtml}${tagHtml}</div>
-        <div class="nle-export-info-row"><span>话题 ID</span><b>${info.id}</b></div>
-        <div class="nle-export-info-row"><span>楼层数</span><b>${info.postsCount}</b></div>
-        ${info.views ? `<div class="nle-export-info-row"><span>浏览量</span><b>${Utils.formatNumber(info.views)}</b></div>` : ''}
-      </div>
+      ${TopicInfoCard.render(info, { showTopicId: true, showTags: true })}
       <div class="nle-export-range">
         <label>楼层范围</label>
         <input id="nle-export-start" type="number" min="1" max="${info.postsCount}" value="1">
