@@ -395,37 +395,41 @@ export class ExportFormatter {
     const link = el.querySelector('a.onebox') || el.querySelector('a[href]');
     const href = link?.getAttribute('href') || '';
 
-    // 尝试提取标题（h3, h4 优先级高于 .source）
-    const titleEl = el.querySelector('.onebox-body h3, .onebox-body h4');
+    // 提取站点图标旁边的域名（通常在顶部）
+    const headerTextNodes = Array.from(el.childNodes).filter(
+      node => node.nodeType === Node.TEXT_NODE && node.textContent?.trim()
+    );
+    const headerText = headerTextNodes.map(n => n.textContent?.trim()).filter(Boolean)[0] || '';
+
+    // 提取主标题（通常在 h3/h4 或加粗文本中）
+    const titleEl = el.querySelector('.onebox-body h3, .onebox-body h4, strong, b');
     const title = titleEl ? this._inlineMarkdown(titleEl).trim() : '';
 
-    // 尝试提取描述
+    // 提取链接文本（通常是蓝色/绿色的链接）
+    const linkTextEl = el.querySelector('a[href]');
+    const linkText = linkTextEl ? this._inlineMarkdown(linkTextEl).trim() : '';
+
+    // 提取描述
     const descEl = el.querySelector('.onebox-body p, .description');
     const description = descEl ? this._inlineMarkdown(descEl).trim() : '';
-
-    // 尝试提取域名/来源（排除已经作为标题的元素）
-    const domainEl = el.querySelector('.domain, .source');
-    const domain = domainEl && domainEl !== titleEl ? this._inlineMarkdown(domainEl).trim() : '';
 
     // 构建 Markdown 格式的引用块
     if (!href) return this._childrenToMarkdown(el);
 
     const lines: string[] = [];
 
-    // 如果有标题，使用加粗链接
-    if (title) {
-      lines.push(`> **[${title}](${href})**`);
-    } else {
-      lines.push(`> **[${href}](${href})**`);
+    // 显示域名（如果有）
+    if (headerText && headerText !== title && headerText !== linkText) {
+      lines.push(`> 🌐 **${headerText}**`);
+      lines.push(`>`);
     }
 
-    // 添加域名（只有当域名与标题不同，且域名不是标题的一部分时）
-    if (domain && domain !== title && !title.includes(domain)) {
-      lines.push(`> 🔗 ${domain}`);
-    }
+    // 显示主要内容（优先使用标题，其次链接文本）
+    const mainContent = title || linkText || href;
+    lines.push(`> [${mainContent}](${href})`);
 
-    // 添加描述
-    if (description && description !== title && description !== domain) {
+    // 添加描述（如果有且不重复）
+    if (description && description !== title && description !== linkText && description !== headerText) {
       lines.push(`>`);
       lines.push(`> ${description}`);
     }
