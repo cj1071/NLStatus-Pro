@@ -2,7 +2,7 @@
 
 NodeLoc 状态增强脚本 - 信任等级追踪、阅读统计、能量值显示、排行榜、活动记录、帖子导出、AI 帖子总结
 
-[![Version](https://img.shields.io/badge/Version-v1.1.0-22c55e)](https://github.com/cj1071/NLStatus-Pro/releases)
+[![Version](https://img.shields.io/badge/Version-v1.2.0-22c55e)](https://github.com/cj1071/NLStatus-Pro/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.0-646CFF)](https://vitejs.dev/)
