@@ -395,17 +395,17 @@ export class ExportFormatter {
     const link = el.querySelector('a.onebox') || el.querySelector('a[href]');
     const href = link?.getAttribute('href') || '';
 
-    // 尝试提取标题
-    const titleEl = el.querySelector('.onebox-body h3, .onebox-body h4, .source');
+    // 尝试提取标题（h3, h4 优先级高于 .source）
+    const titleEl = el.querySelector('.onebox-body h3, .onebox-body h4');
     const title = titleEl ? this._inlineMarkdown(titleEl).trim() : '';
 
     // 尝试提取描述
     const descEl = el.querySelector('.onebox-body p, .description');
     const description = descEl ? this._inlineMarkdown(descEl).trim() : '';
 
-    // 尝试提取域名/来源
+    // 尝试提取域名/来源（排除已经作为标题的元素）
     const domainEl = el.querySelector('.domain, .source');
-    const domain = domainEl ? this._inlineMarkdown(domainEl).trim() : '';
+    const domain = domainEl && domainEl !== titleEl ? this._inlineMarkdown(domainEl).trim() : '';
 
     // 构建 Markdown 格式的引用块
     if (!href) return this._childrenToMarkdown(el);
@@ -419,13 +419,13 @@ export class ExportFormatter {
       lines.push(`> **[${href}](${href})**`);
     }
 
-    // 添加域名
-    if (domain && domain !== title) {
+    // 添加域名（只有当域名与标题不同，且域名不是标题的一部分时）
+    if (domain && domain !== title && !title.includes(domain)) {
       lines.push(`> 🔗 ${domain}`);
     }
 
     // 添加描述
-    if (description) {
+    if (description && description !== title && description !== domain) {
       lines.push(`>`);
       lines.push(`> ${description}`);
     }
