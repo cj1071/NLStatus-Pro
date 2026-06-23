@@ -2,7 +2,6 @@
  * AI 帖子总结主类
  */
 
-import '../../styles/features.css';
 import { Storage } from '../../utils/storage';
 import { Utils } from '../../utils/helpers';
 import { Network } from '../../utils/network';

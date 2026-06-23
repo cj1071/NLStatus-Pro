@@ -2,7 +2,6 @@
  * 帖子导出主类
  */
 
-import '../../styles/features.css';
 import { TopicDataFetcher } from './fetcher';
 import { ExportFormatter } from './formatters';
 import { ExportUI } from './ui';
