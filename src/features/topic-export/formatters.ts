@@ -391,45 +391,43 @@ export class ExportFormatter {
    * 将 Onebox 卡片转换为 Markdown
    */
   private _oneboxToMarkdown(el: HTMLElement): string {
-    // 提取 Onebox 信息
-    const link = el.querySelector('a.onebox') || el.querySelector('a[href]');
+    // 提取链接
+    const link = el.querySelector('a[href]');
     const href = link?.getAttribute('href') || '';
-
-    // 提取站点图标旁边的域名（通常在顶部）
-    const headerTextNodes = Array.from(el.childNodes).filter(
-      node => node.nodeType === Node.TEXT_NODE && node.textContent?.trim()
-    );
-    const headerText = headerTextNodes.map(n => n.textContent?.trim()).filter(Boolean)[0] || '';
-
-    // 提取主标题（通常在 h3/h4 或加粗文本中）
-    const titleEl = el.querySelector('.onebox-body h3, .onebox-body h4, strong, b');
-    const title = titleEl ? this._inlineMarkdown(titleEl).trim() : '';
-
-    // 提取链接文本（通常是蓝色/绿色的链接）
-    const linkTextEl = el.querySelector('a[href]');
-    const linkText = linkTextEl ? this._inlineMarkdown(linkTextEl).trim() : '';
-
-    // 提取描述
-    const descEl = el.querySelector('.onebox-body p, .description');
-    const description = descEl ? this._inlineMarkdown(descEl).trim() : '';
-
-    // 构建 Markdown 格式的引用块
     if (!href) return this._childrenToMarkdown(el);
 
+    // 提取 header.source 中的域名
+    const sourceHeader = el.querySelector('header.source a');
+    const domain = sourceHeader ? this._inlineMarkdown(sourceHeader).trim() : '';
+
+    // 提取 article.onebox-body 中的标题
+    const bodyArticle = el.querySelector('article.onebox-body');
+    const titleEl = bodyArticle?.querySelector('h3, h4, h3 a, h4 a');
+    const title = titleEl ? this._inlineMarkdown(titleEl).trim() : '';
+
+    // 提取描述（如果有）
+    const descEl = bodyArticle?.querySelector('p');
+    const description = descEl ? this._inlineMarkdown(descEl).trim() : '';
+
+    // 构建 Markdown
     const lines: string[] = [];
 
-    // 显示域名（如果有）
-    if (headerText && headerText !== title && headerText !== linkText) {
-      lines.push(`> 🌐 **${headerText}**`);
+    // 显示域名
+    if (domain) {
+      lines.push(`> 🌐 **${domain}**`);
       lines.push(`>`);
     }
 
-    // 显示主要内容（优先使用标题，其次链接文本）
-    const mainContent = title || linkText || href;
-    lines.push(`> [${mainContent}](${href})`);
+    // 显示标题（如果有且与域名不同）
+    if (title && title !== domain) {
+      lines.push(`> [${title}](${href})`);
+    } else if (!title) {
+      // 如果没有标题，使用链接本身
+      lines.push(`> [${domain || href}](${href})`);
+    }
 
-    // 添加描述（如果有且不重复）
-    if (description && description !== title && description !== linkText && description !== headerText) {
+    // 添加描述
+    if (description && description !== title) {
       lines.push(`>`);
       lines.push(`> ${description}`);
     }
