@@ -167,15 +167,55 @@ NLStatus-Pro/
 │   ├── tracking/            # 追踪统计
 │   │   ├── readingTracker.ts        # 阅读时间追踪
 │   │   └── notifier.ts              # 通知系统
+│   ├── features/            # 功能模块
+│   │   ├── ai-summary/              # AI 帖子总结（模块化）
+│   │   │   ├── types.ts             # 类型定义
+│   │   │   ├── config.ts            # 配置管理
+│   │   │   ├── history.ts           # 历史记录
+│   │   │   ├── generator.ts         # AI 生成核心
+│   │   │   ├── viewer.ts            # 查看器 UI
+│   │   │   ├── markdown.ts          # Markdown 渲染
+│   │   │   └── index.ts             # 主协调器
+│   │   └── topic-export/            # 帖子导出（模块化）
+│   │       ├── types.ts             # 类型定义
+│   │       ├── fetcher.ts           # 数据获取
+│   │       ├── formatters.ts        # 格式转换
+│   │       ├── ui.ts                # UI 渲染
+│   │       └── index.ts             # 主协调器
 │   ├── ui/                  # 界面组件
-│   │   ├── panel.ts                 # 主面板
-│   │   ├── panelTemplate.ts         # 面板模板
-│   │   ├── renderer.ts              # 渲染器
-│   │   ├── profileActions.ts        # 用户卡片快捷操作
-│   │   ├── navBarEnergy.ts          # 导航栏能量值
-│   │   ├── topicExporter.ts         # 帖子导出
-│   │   ├── aiTopicSummary.ts        # AI 帖子总结
-│   │   └── styles.css               # 样式
+│   │   ├── panel/                   # 主面板
+│   │   │   ├── panel.ts             # 面板逻辑
+│   │   │   ├── template.ts          # 面板模板
+│   │   │   ├── chrome.ts            # 面板外壳
+│   │   │   └── renderer.ts          # 渲染器
+│   │   ├── panels/                  # 子面板
+│   │   │   ├── activityPanel.ts     # 活动面板
+│   │   │   ├── leaderboardPanel.ts  # 排行榜面板
+│   │   │   ├── trustPanel.ts        # 信任等级面板
+│   │   │   └── followPanel.ts       # 关注粉丝面板
+│   │   ├── components/              # 通用组件
+│   │   │   ├── profileActions.ts    # 用户卡片快捷操作
+│   │   │   ├── loginPrompt.ts       # 登录提示
+│   │   │   ├── tabController.ts     # Tab 切换控制器
+│   │   │   └── resizeController.ts  # 尺寸调整控制器
+│   │   └── nav/                     # 导航栏
+│   │       ├── navBarEnergy.ts      # 导航栏能量值
+│   │       └── themeController.ts   # 主题切换
+│   ├── styles/              # 样式文件（模块化）
+│   │   ├── variables.css            # CSS 变量
+│   │   ├── base.css                 # 基础样式
+│   │   ├── panel.css                # 主面板样式
+│   │   ├── header.css               # 面板头部
+│   │   ├── tabs.css                 # 标签导航
+│   │   ├── scrollbar.css            # 滚动条
+│   │   ├── profile-card.css         # 用户资料卡
+│   │   ├── trust-level.css          # 信任等级环形图
+│   │   ├── leaderboard.css          # 排行榜
+│   │   ├── activity.css             # 活动列表
+│   │   ├── ai-summary.css           # AI 总结样式
+│   │   ├── topic-export.css         # 帖子导出样式
+│   │   ├── shared.css               # 共享组件样式
+│   │   └── responsive.css           # 响应式设计
 │   ├── types.ts             # 类型声明
 │   └── utils/               # 工具函数
 │       ├── helpers.ts               # 通用工具
@@ -248,6 +288,55 @@ pnpm build
 - [ ] **云同步**：跨设备同步阅读数据（需搭建 Cloudflare Workers 后端）
   - 详见 [云同步实现计划](docs/cloud-sync-plan.md)
 - [ ] **多语言支持**：英文界面
+
+---
+
+## 📝 更新日志
+
+### v1.2.0 (2026-06-23)
+
+**🔧 重大重构**
+- 拆分 `topicExporter.ts` (718行 → 5个模块)
+  - `types.ts` - 类型定义
+  - `fetcher.ts` - 数据获取 (178行)
+  - `formatters.ts` - 格式转换 (311行)
+  - `ui.ts` - UI渲染 (197行)
+  - `index.ts` - 主协调器 (155行)
+- 拆分 `aiTopicSummary.ts` (1,410行 → 7个模块)
+  - `types.ts` - 类型定义
+  - `config.ts` - 配置管理
+  - `history.ts` - 历史记录
+  - `generator.ts` - AI生成核心
+  - `viewer.ts` - 查看器UI
+  - `markdown.ts` - Markdown渲染
+  - `index.ts` - 主协调器
+- 拆分 `features.css` (1,346行 → 3个模块)
+  - `ai-summary.css` - AI总结样式 (859行)
+  - `topic-export.css` - 导出面板样式 (218行)
+  - `shared.css` - 共享组件样式 (209行)
+
+**🐛 Bug修复**
+- 修复 @media 查询未闭合导致导出面板样式失效
+- 修复缺失的导出面板样式（219行）
+- 修复缺失的AI总结样式（942行）
+- 移除重复的 Toast 和 Loading 样式定义
+- 移除重复的 CSS 导入
+
+**🎨 样式优化**
+- `.nle-trust-guide` 字体大小调整为 10px
+- AI 表单输入框 padding 优化
+
+**📦 构建优化**
+- 构建大小优化：253.12 KB → 251.95 KB
+- 代码可维护性显著提升
+
+### v1.1.0 (2026-06-19)
+- ✨ 新增 AI 帖子总结功能
+- ✨ 新增帖子导出功能（支持 Markdown/HTML/PDF）
+- 🎨 UI 细节优化
+
+### v1.0.3 及更早版本
+- 查看 [GitHub Releases](https://github.com/cj1071/NLStatus-Pro/releases) 获取完整历史
 
 ---
 
