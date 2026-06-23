@@ -207,7 +207,7 @@ export class AITopicSummary {
       const hasApi = config.apiUrl.trim().length > 0;
 
       this._body.innerHTML = `
-        ${TopicInfoCard.render(info, { compact: true, showTags: false })}
+        ${TopicInfoCard.render(info, { showTags: false })}
         ${hasApi ? '' : '<div class="nle-ai-warning">请先在"设置"里填写 OpenAI 兼容 API 地址。</div>'}
         <div class="nle-ai-range">
           <label>楼层范围</label>

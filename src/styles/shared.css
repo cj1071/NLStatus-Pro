@@ -123,7 +123,6 @@
 
 
 /* Shared Topic Info Card */
-.nle-topic-card,
 .nle-topic-info {
   padding: 14px;
   border-radius: 10px;
@@ -131,7 +130,6 @@
   border: 1px solid var(--nle-border);
 }
 
-.nle-topic-card-title,
 .nle-topic-info-title {
   font-size: 15px;
   font-weight: 600;
@@ -140,7 +138,6 @@
   line-height: 1.4;
 }
 
-.nle-topic-card-tags,
 .nle-topic-info-tags {
   display: flex;
   flex-wrap: wrap;
@@ -166,31 +163,7 @@
   border: 1px solid var(--nle-border);
 }
 
-/* 卡片式统计（AI 总结） */
-.nle-topic-card-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--nle-border);
-}
-.nle-topic-card-stats > div {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.nle-topic-card-stats span {
-  font-size: 11px;
-  color: var(--nle-txt-mut);
-}
-.nle-topic-card-stats b {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--nle-txt);
-}
-
-/* 列表式信息（导出） */
+/* 列表式信息 */
 .nle-topic-info-row {
   display: flex;
   justify-content: space-between;

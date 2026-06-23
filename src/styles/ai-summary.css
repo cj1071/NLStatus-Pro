@@ -86,18 +86,33 @@
   border-color: rgba(248, 113, 113, 0.25);
 }
 .nle-ai-range {
-  display: grid;
-  grid-template-columns: 1fr 70px auto 70px;
+  display: flex;
   align-items: center;
   gap: 8px;
   margin-top: 12px;
+  padding: 10px;
+  border: 1px solid var(--nle-border);
+  border-radius: 12px;
+  background: var(--nle-bg-card);
+  font-size: 12px;
+}
+.nle-ai-range label {
+  color: var(--nle-txt-mut);
+}
+.nle-ai-range input {
+  width: 66px;
+  padding: 5px 7px;
+  border: 1px solid var(--nle-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--nle-txt);
+  text-align: center;
 }
 .nle-ai-range label,
 .nle-ai-form label {
   color: var(--nle-txt-mut);
   font-size: 11px;
 }
-.nle-ai-range input,
 .nle-ai-form input,
 .nle-ai-form textarea {
   width: 100%;
@@ -107,9 +122,6 @@
   background: rgba(255, 255, 255, 0.05);
   color: var(--nle-txt);
   font: inherit;
-}
-.nle-ai-range input {
-  padding: 7px 6px;
 }
 .nle-ai-form {
   display: flex;
