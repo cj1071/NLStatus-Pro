@@ -1,7 +1,7 @@
 import { CURRENT_SITE } from '../../site';
 import { Storage } from '../../utils/storage';
 import { AITopicSummary } from '../aiTopicSummary';
-import { TopicExporter } from '../topicExporter';
+import { TopicExporter } from '../../features/topic-export';
 
 const NODELOC_STORE_URL = 'https://store.nodeloc.com/';
 const NODELOC_DOMAIN_URL = 'https://domain.nodeloc.com/';
