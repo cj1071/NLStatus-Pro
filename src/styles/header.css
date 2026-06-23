@@ -1,0 +1,62 @@
+/* Panel Header - Title, Logo, and Action Buttons */
+
+.nle-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  gap: 8px;
+  cursor: grab;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--nle-border);
+  background: linear-gradient(135deg, var(--nle-glow), transparent);
+}
+.nle-hdr:active {
+  cursor: grabbing;
+}
+.nle-hdr-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+.nle-hdr-logo {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  transition: all 0.3s;
+}
+.nle-hdr-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--nle-txt);
+  white-space: nowrap;
+}
+.nle-hdr-ver {
+  font-size: 10px;
+  color: var(--nle-txt-mut);
+}
+.nle-hdr-btns {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.nle-hdr-btns button {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--nle-txt-mut);
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.nle-hdr-btns button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--nle-txt);
+}

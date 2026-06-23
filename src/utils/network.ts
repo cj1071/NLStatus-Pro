@@ -1,5 +1,6 @@
 import { CONFIG } from '../config';
 import { CURRENT_SITE } from '../site';
+import { Utils } from './helpers';
 
 interface QueueItem {
   requestFn: () => Promise<unknown>;
@@ -118,4 +119,46 @@ export class Network {
   }
 
   clearCache(): void { this._apiCache.clear(); this._apiCacheTime.clear(); }
+
+  /**
+   * 从当前 URL 中提取话题 ID
+   * 支持格式：/t/topic/123, /t/slug/123, /t/123
+   */
+  static getTopicId(): number | null {
+    const path = window.location.pathname;
+    const match = path.match(/^\/t\/topic\/(\d+)(?:\/|$)/)
+      || path.match(/^\/t\/[^/]+\/(\d+)(?:\/|$)/)
+      || path.match(/^\/t\/(\d+)(?:\/|$)/);
+    const id = Utils.toSafeInt(match?.[1] || '', 0);
+    return id > 0 ? id : null;
+  }
+
+  /**
+   * 获取当前站点的 origin
+   */
+  static getOrigin(): string {
+    return CURRENT_SITE?.origin || window.location.origin;
+  }
+
+  /**
+   * 简化的 fetch 方法，不使用请求队列和缓存
+   * 适用于需要直接控制请求的场景（如 aiTopicSummary 和 topicExporter）
+   * @param path API 路径（可以是相对路径或完整 URL）
+   * @param signal 可选的 AbortSignal 用于取消请求
+   */
+  static async fetchJSONDirect<T>(path: string, signal?: AbortSignal): Promise<T> {
+    const url = path.startsWith('http') ? path : `${Network.getOrigin()}${path}`;
+    const resp = await fetch(url, {
+      credentials: 'include',
+      signal,
+      headers: {
+        'Accept': 'application/json',
+        ...Network.buildAuthHeaders(url),
+      },
+    });
+    if (resp.status === 429) throw new Error('请求过于频繁，请稍后重试');
+    if (resp.status === 403) throw new Error('需要登录后查看');
+    if (!resp.ok) throw new Error(`请求失败 (${resp.status})`);
+    return resp.json() as Promise<T>;
+  }
 }

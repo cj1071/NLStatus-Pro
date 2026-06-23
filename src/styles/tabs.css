@@ -1,0 +1,29 @@
+/* Tab Navigation - Main Navigation Tabs */
+
+.nle-tab-nav {
+  display: flex;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--nle-border);
+  padding: 0 8px;
+}
+.nle-tab {
+  flex: 1;
+  padding: 8px 4px;
+  border: none;
+  background: none;
+  color: var(--nle-txt-mut);
+  cursor: pointer;
+  font-size: 12px;
+  text-align: center;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.nle-tab:hover {
+  color: var(--nle-txt);
+}
+.nle-tab.active {
+  color: var(--nle-accent);
+  border-bottom-color: var(--nle-accent);
+  font-weight: 600;
+}

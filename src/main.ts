@@ -1,8 +1,8 @@
 import { detectSite } from './site';
 import { TabLeader } from './utils/tabLeader';
 import { Logger } from './utils/logger';
-import Panel from './ui/panel';
-import { NavBarEnergy } from './ui/navBarEnergy';
+import Panel from './ui/panel/panel';
+import { NavBarEnergy } from './ui/nav/nav-bar-energy';
 import { Network } from './utils/network';
 
 if (!detectSite()) {

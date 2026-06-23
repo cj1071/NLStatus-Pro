@@ -1,11 +1,11 @@
-import { CONFIG, PATTERNS } from '../config';
-import { CURRENT_SITE } from '../site';
-import { Screen } from '../utils/screen';
-import { Utils } from '../utils/helpers';
-import type { UserProfile, RequirementItem } from '../data/trustLevelParser';
-import type { LeaderboardData } from '../data/leaderboardFetcher';
-import type { FollowUser } from '../data/followFetcher';
-import type { ActivityItem, ActivityType } from '../data/activityFetcher';
+import { CONFIG, PATTERNS } from '../../config';
+import { CURRENT_SITE } from '../../site';
+import { Screen } from '../../utils/screen';
+import { Utils } from '../../utils/helpers';
+import type { UserProfile, RequirementItem } from '../../data/trust-level/parser';
+import type { LeaderboardData } from '../../data/leaderboard/fetcher';
+import type { FollowUser } from '../../data/follow/fetcher';
+import type { ActivityItem, ActivityType } from '../../data/activity/fetcher';
 import type Panel from './panel';
 
 const activityIcons: Record<ActivityType, string> = {

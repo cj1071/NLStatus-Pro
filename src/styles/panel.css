@@ -1,0 +1,152 @@
+/* Main Panel - Container and Layout */
+
+/* ====== NLStatus Pro Panel ====== */
+
+#nle-panel {
+  position: fixed;
+  top: 80px;
+  right: 16px;
+  z-index: 99999;
+  width: 300px;
+  max-height: calc(100vh - 100px);
+  background: var(--nle-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--nle-border);
+  border-radius: 16px;
+  box-shadow: var(--nle-shadow), 0 0 0 1px var(--nle-border);
+  color: var(--nle-txt);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: opacity 0.3s, transform 0.3s;
+  user-select: none;
+}
+
+/* Collapsed state */
+#nle-panel.nle-collapsed {
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  border-radius: 50%;
+  cursor: pointer;
+  touch-action: none;
+  background: linear-gradient(135deg, var(--nle-accent), var(--nle-accent-2));
+  border: none;
+  box-shadow: var(--nle-shadow), 0 0 20px var(--nle-glow);
+}
+#nle-panel.nle-collapsed .nle-hdr {
+  padding: 0;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  background: transparent;
+  min-height: 0;
+}
+#nle-panel.nle-collapsed .nle-hdr-info {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+}
+#nle-panel.nle-collapsed .nle-body {
+  max-height: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+#nle-panel.nle-collapsed .nle-main {
+  display: none;
+}
+#nle-panel.nle-collapsed .nle-tab-nav,
+#nle-panel.nle-collapsed .nle-profile-card,
+#nle-panel.nle-collapsed .nle-progress {
+  display: none;
+}
+#nle-panel.nle-collapsed .nle-hdr-btns > button:not(.nle-toggle) {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: scale(0.8);
+  position: absolute;
+}
+#nle-panel.nle-collapsed .nle-hdr-btns {
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  margin-left: 0;
+}
+#nle-panel.nle-collapsed,
+#nle-panel.nle-collapsed * {
+  cursor: pointer !important;
+}
+#nle-panel.nle-collapsed .nle-toggle {
+  width: 100%;
+  height: 100%;
+  font-size: 18px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+#nle-panel.nle-collapsed .nle-toggle .nle-toggle-arrow {
+  display: none;
+}
+#nle-panel.nle-collapsed .nle-toggle .nle-toggle-logo {
+  display: block;
+  width: 24px;
+  height: 24px;
+  filter: brightness(1.05) drop-shadow(0 0 2px rgba(140, 180, 255, 0.2));
+  transition: filter 0.2s ease, transform 0.2s ease;
+  transform-origin: center center;
+  will-change: transform, filter;
+  pointer-events: none;
+  user-select: none;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+#nle-panel:not(.nle-collapsed) .nle-toggle .nle-toggle-logo {
+  display: none;
+}
+
+/* Collapsed hover effects */
+@media (hover: hover) {
+  #nle-panel.nle-collapsed:hover {
+    transform: scale(1.08);
+    box-shadow: var(--nle-shadow), 0 0 35px rgba(99, 102, 241, 0.6);
+  }
+  #nle-panel.nle-collapsed:hover .nle-toggle-logo {
+    filter: brightness(1.6) drop-shadow(0 0 12px rgba(160, 200, 255, 1))
+      drop-shadow(0 0 20px rgba(140, 180, 255, 0.8));
+    transform: scale(1.15) rotate(360deg);
+    transition: filter 0.3s ease, transform 0.6s ease;
+  }
+}
+#nle-panel.nle-collapsed:active .nle-toggle-logo {
+  filter: brightness(2) drop-shadow(0 0 16px rgba(200, 230, 255, 1))
+    drop-shadow(0 0 30px rgba(160, 200, 255, 1));
+  transform: scale(0.92);
+}
+#nle-panel.nle-collapsed.no-hover-effect {
+  transform: none !important;
+}
+#nle-panel.nle-collapsed.no-hover-effect .nle-toggle-logo {
+  filter: brightness(1.05) drop-shadow(0 0 2px rgba(140, 180, 255, 0.2)) !important;
+  transform: none !important;
+}
+
+/* Disable transitions during drag/collapse */
+#nle-panel.no-trans,
+#nle-panel.no-trans * {
+  transition: none !important;
+}

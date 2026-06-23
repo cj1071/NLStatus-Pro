@@ -1,5 +1,5 @@
-import { CURRENT_SITE } from '../site';
-import { Network } from '../utils/network';
+import { CURRENT_SITE } from '../../site';
+import { Network } from '../../utils/network';
 
 export interface FollowUser {
   username: string;

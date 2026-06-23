@@ -1,8 +1,8 @@
-import { CURRENT_SITE } from '../site';
-import { Storage } from '../utils/storage';
-import { ActivityFetcher } from '../data/activityFetcher';
-import type { ActivityItem, ActivityPage, ActivityType } from '../data/activityFetcher';
-import type { PanelElementMap } from './panelTemplate';
+import { CURRENT_SITE } from '../../site';
+import { Storage } from '../../utils/storage';
+import { ActivityFetcher } from '../../data/activity/fetcher';
+import type { ActivityItem, ActivityPage, ActivityType } from '../../data/activity/fetcher';
+import type { PanelElementMap } from '../panel/template';
 
 interface ActivityPanelOptions {
   root: HTMLElement;

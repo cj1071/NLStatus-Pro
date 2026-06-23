@@ -1,8 +1,8 @@
-import { CURRENT_SITE } from '../site';
-import { FollowFetcher } from '../data/followFetcher';
-import type { FollowUser } from '../data/followFetcher';
-import type { Storage } from '../utils/storage';
-import type { PanelElementMap } from './panelTemplate';
+import { CURRENT_SITE } from '../../site';
+import { FollowFetcher } from '../../data/follow/fetcher';
+import type { FollowUser } from '../../data/follow/fetcher';
+import type { Storage } from '../../utils/storage';
+import type { PanelElementMap } from '../panel/template';
 
 interface FollowPanelOptions {
   root: HTMLElement;

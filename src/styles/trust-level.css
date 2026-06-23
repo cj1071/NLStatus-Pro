@@ -1,0 +1,120 @@
+/* Trust Level - Trust Level Display and Progress */
+
+.nle-trust-ring-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2px 0;
+}
+.nle-ring-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.08);
+}
+.nle-ring-fg {
+  fill: none;
+  stroke: var(--nle-accent);
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: stroke-dashoffset 0.6s ease;
+}
+.nle-ring-text {
+  font-size: 18px;
+  font-weight: 700;
+  fill: var(--nle-txt);
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.nle-ring-label {
+  font-size: 10px;
+  fill: var(--nle-txt-mut);
+  text-anchor: middle;
+}
+.nle-trust-level-badge {
+  margin-top: 4px;
+  padding: 2px 12px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--nle-accent), var(--nle-accent-2));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+.nle-trust-user {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--nle-txt-mut);
+}
+.nle-trust-guide {
+  display: block;
+  width: fit-content;
+  margin: 14px auto 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--nle-txt-mut);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  opacity: 0.78;
+  transition: color 0.2s, opacity 0.2s;
+}
+.nle-trust-guide:hover {
+  color: var(--nle-txt);
+  opacity: 1;
+}
+
+/* Requirements list */
+.nle-req-list {
+  margin-top: 10px;
+}
+.nle-req-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  background: var(--nle-bg-card);
+  font-size: 12px;
+}
+.nle-req-item.met {
+  opacity: 0.5;
+}
+.nle-req-item.met .nle-req-check {
+  color: var(--nle-ok);
+}
+.nle-req-item.info .nle-req-check {
+  color: var(--nle-warn);
+}
+.nle-req-name {
+  flex: 1;
+  min-width: 0;
+}
+.nle-req-values {
+  color: var(--nle-txt-mut);
+  font-variant-numeric: tabular-nums;
+  margin-right: 6px;
+  white-space: nowrap;
+}
+.nle-req-check {
+  width: 16px;
+  text-align: center;
+}
+.nle-req-bar-wrap {
+  width: 50px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.nle-req-bar {
+  height: 100%;
+  background: var(--nle-accent);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+.nle-req-item.met .nle-req-bar {
+  background: var(--nle-ok);
+}

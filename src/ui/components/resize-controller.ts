@@ -1,4 +1,4 @@
-import { Utils } from '../utils/helpers';
+import { Utils } from '../../utils/helpers';
 
 interface ResizeControllerOptions {
   onResize: () => void;

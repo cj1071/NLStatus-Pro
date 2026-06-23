@@ -1,6 +1,6 @@
-import { CONFIG } from '../config';
-import { CURRENT_SITE } from '../site';
-import { Network } from '../utils/network';
+import { CONFIG } from '../../config';
+import { CURRENT_SITE } from '../../site';
+import { Network } from '../../utils/network';
 
 export interface LeaderboardUser {
   username: string;

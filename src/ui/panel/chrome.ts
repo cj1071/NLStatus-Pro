@@ -1,4 +1,4 @@
-import { Storage } from '../utils/storage';
+import { Storage } from '../../utils/storage';
 
 const DRAG_THRESHOLD = 5;
 

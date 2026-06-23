@@ -1,0 +1,90 @@
+/* Leaderboard - Rankings and Statistics */
+
+.nle-lb-posting-filters {
+  margin-bottom: 8px;
+}
+.nle-lb-subtabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.nle-activity-subtabs {
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+.nle-activity-subtabs .nle-lb-subtab {
+  flex: 1 0 calc(25% - 4px);
+}
+.nle-lb-subtab {
+  flex: 1;
+  padding: 5px;
+  border: 1px solid var(--nle-border);
+  border-radius: 8px;
+  background: none;
+  color: var(--nle-txt-mut);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+.nle-lb-subtab.active {
+  border-color: var(--nle-accent);
+  color: var(--nle-accent);
+  background: var(--nle-glow);
+}
+.nle-lb-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  background: var(--nle-bg-card);
+}
+.nle-lb-rank {
+  width: 24px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 12px;
+}
+.nle-lb-rank.gold {
+  color: #fbbf24;
+}
+.nle-lb-rank.silver {
+  color: #94a3b8;
+}
+.nle-lb-rank.bronze {
+  color: #d97706;
+}
+.nle-lb-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.nle-lb-name {
+  flex: 1;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nle-lb-score {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--nle-accent);
+}
+.nle-lb-personal {
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--nle-glow), transparent);
+  border: 1px solid var(--nle-accent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.nle-lb-personal-rank {
+  font-weight: 700;
+  color: var(--nle-accent);
+}

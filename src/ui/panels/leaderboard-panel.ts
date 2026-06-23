@@ -1,6 +1,6 @@
-import { LeaderboardFetcher } from '../data/leaderboardFetcher';
-import type { LeaderboardData, PostingPeriod, PostingType } from '../data/leaderboardFetcher';
-import type { PanelElementMap } from './panelTemplate';
+import { LeaderboardFetcher } from '../../data/leaderboard/fetcher';
+import type { LeaderboardData, PostingPeriod, PostingType } from '../../data/leaderboard/fetcher';
+import type { PanelElementMap } from '../panel/template';
 
 type LeaderboardType = 'energy' | PostingType;
 

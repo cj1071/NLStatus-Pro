@@ -1,7 +1,7 @@
-import { CONFIG } from '../config';
-import { CURRENT_SITE } from '../site';
-import { Network } from '../utils/network';
-import { Utils } from '../utils/helpers';
+import { CONFIG } from '../../config';
+import { CURRENT_SITE } from '../../site';
+import { Network } from '../../utils/network';
+import { Utils } from '../../utils/helpers';
 
 export class NavBarEnergy {
   private _network: Network;

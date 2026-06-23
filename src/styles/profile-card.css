@@ -1,0 +1,85 @@
+/* Profile Card - User Information Display */
+
+.nle-profile-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  margin: 12px 12px 0;
+  border-radius: 12px;
+  background: var(--nle-bg-card);
+  border: 1px solid var(--nle-border);
+}
+.nle-profile-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.nle-profile-actions {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+.nle-profile-btn {
+  grid-column: span 2;
+  padding: 6px 4px;
+  border: 1px solid var(--nle-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--nle-txt-mut);
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.nle-profile-btn-wide {
+  grid-column: span 3;
+}
+.nle-profile-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--nle-txt);
+  border-color: var(--nle-accent);
+}
+.nle-profile-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid var(--nle-accent);
+}
+.nle-profile-main {
+  min-width: 0;
+  flex: 1;
+}
+.nle-profile-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--nle-txt);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nle-profile-username {
+  font-size: 12px;
+  color: var(--nle-txt-mut);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nle-profile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 7px;
+  font-size: 12px;
+  color: var(--nle-txt-mut);
+}
+.nle-profile-meta b {
+  color: var(--nle-txt);
+  font-weight: 700;
+}
+.nle-profile-days b {
+  color: var(--nle-accent);
+}

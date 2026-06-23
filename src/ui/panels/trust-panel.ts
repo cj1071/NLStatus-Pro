@@ -1,13 +1,13 @@
-import { ErrorFormatter } from '../utils/errors';
-import { Utils } from '../utils/helpers';
-import { Storage } from '../utils/storage';
-import { Network } from '../utils/network';
-import { TrustLevelParser } from '../data/trustLevelParser';
-import { ReadingTracker } from '../tracking/readingTracker';
-import { Notifier } from '../tracking/notifier';
-import { LoginPrompt } from './loginPrompt';
-import type { RequirementItem, UserProfile } from '../data/trustLevelParser';
-import type { PanelElementMap } from './panelTemplate';
+import { ErrorFormatter } from '../../utils/errors';
+import { Utils } from '../../utils/helpers';
+import { Storage } from '../../utils/storage';
+import { Network } from '../../utils/network';
+import { TrustLevelParser } from '../../data/trust-level/parser';
+import { ReadingTracker } from '../../tracking/reading-tracker';
+import { Notifier } from '../../tracking/notifier';
+import { LoginPrompt } from '../components/login-prompt';
+import type { RequirementItem, UserProfile } from '../../data/trust-level/parser';
+import type { PanelElementMap } from '../panel/template';
 
 interface TrustPanelOptions {
   els: PanelElementMap;

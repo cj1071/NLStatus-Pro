@@ -1,4 +1,4 @@
-import { CURRENT_SITE } from '../site';
+import { CURRENT_SITE } from '../../site';
 
 const PANEL_ELEMENT_IDS = [
   'progress',

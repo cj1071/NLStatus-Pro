@@ -1,0 +1,28 @@
+/* CSS Variables - Color Scheme and Design Tokens */
+
+:root {
+  --nle-bg: rgba(18, 19, 26, 0.97);
+  --nle-bg-solid: #12131a;
+  --nle-bg-card: rgba(30, 32, 42, 0.85);
+  --nle-txt: #e4e6f0;
+  --nle-txt-mut: #8b8fa8;
+  --nle-accent: #6366f1;
+  --nle-accent-2: #8b5cf6;
+  --nle-border: rgba(255, 255, 255, 0.06);
+  --nle-glow: rgba(99, 102, 241, 0.15);
+  --nle-ok: #34d399;
+  --nle-err: #f87171;
+  --nle-warn: #fbbf24;
+  --nle-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+:root.nle-theme-light {
+  --nle-bg: rgba(250, 251, 254, 0.97);
+  --nle-bg-solid: #fafbfe;
+  --nle-bg-card: rgba(240, 241, 246, 0.85);
+  --nle-txt: #1a1c2e;
+  --nle-txt-mut: #6b6f88;
+  --nle-border: rgba(0, 0, 0, 0.06);
+  --nle-glow: rgba(99, 102, 241, 0.08);
+  --nle-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}

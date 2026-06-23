@@ -1,6 +1,6 @@
-import { CURRENT_SITE } from '../site';
-import { Network } from '../utils/network';
-import { Utils } from '../utils/helpers';
+import { CURRENT_SITE } from '../../site';
+import { Network } from '../../utils/network';
+import { Utils } from '../../utils/helpers';
 
 export type ActivityType = 'read' | 'bookmarks' | 'replies' | 'likes' | 'topics' | 'reactions' | 'notifications';
 

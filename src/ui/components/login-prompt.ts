@@ -1,6 +1,6 @@
-import { CURRENT_SITE } from '../site';
-import { Storage } from '../utils/storage';
-import type { PanelElementMap } from './panelTemplate';
+import { CURRENT_SITE } from '../../site';
+import { Storage } from '../../utils/storage';
+import type { PanelElementMap } from '../panel/template';
 
 interface LoginPromptOptions {
   els: PanelElementMap;
