@@ -409,30 +409,31 @@ export class ExportFormatter {
     const descEl = bodyArticle?.querySelector('p');
     const description = descEl ? this._inlineMarkdown(descEl).trim() : '';
 
-    // 构建 Markdown
-    const lines: string[] = [];
+    // 构建 Markdown - 使用代码块样式保持上下结构
+    const lines: string[] = ['---', ''];
 
-    // 显示域名
+    // 第一行：域名
     if (domain) {
-      lines.push(`> 🌐 **${domain}**`);
-      lines.push(`>`);
+      lines.push(`**${domain}**`);
+      lines.push('');
     }
 
-    // 显示标题（如果有且与域名不同）
+    // 第二行：标题链接
     if (title && title !== domain) {
-      lines.push(`> [${title}](${href})`);
+      lines.push(`[${title}](${href})`);
     } else if (!title) {
-      // 如果没有标题，使用链接本身
-      lines.push(`> [${domain || href}](${href})`);
+      lines.push(`[${domain || href}](${href})`);
     }
 
-    // 添加描述
+    // 描述
     if (description && description !== title) {
-      lines.push(`>`);
-      lines.push(`> ${description}`);
+      lines.push('');
+      lines.push(description);
     }
 
-    return lines.join('\n') + '\n\n';
+    lines.push('', '---', '');
+
+    return lines.join('\n');
   }
 
   private _childrenToMarkdown(node: Node): string {
