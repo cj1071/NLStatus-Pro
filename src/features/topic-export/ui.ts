@@ -19,13 +19,13 @@ export class ExportUI {
       || this._root;
 
     this._overlay = document.createElement('div');
-    this._overlay.className = 'nle-export-overlay';
+    this._overlay.className = 'nle-export-overlay nle-overlay-base';
     this._overlay.innerHTML = `
-      <div class="nle-export-header">
+      <div class="nle-export-header nle-overlay-header">
         <div class="nle-export-title">📥 导出帖子</div>
         <div class="nle-export-header-actions">
-          <button class="nle-export-refresh" type="button">刷新</button>
-          <button class="nle-export-close" type="button" title="关闭">×</button>
+          <button class="nle-export-refresh nle-btn-sm" type="button">刷新</button>
+          <button class="nle-export-close nle-btn-close" type="button" title="关闭">×</button>
         </div>
       </div>
       <div class="nle-export-body"></div>

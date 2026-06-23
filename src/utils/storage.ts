@@ -51,8 +51,9 @@ export class Storage {
       const parsed = JSON.parse(raw);
       this._keyCache.set(k, { v: parsed, _t: Date.now() });
       return parsed;
-    } catch {
-      return raw;
+    } catch (e) {
+      console.warn(`[NLE] Failed to parse storage value for key "${key}":`, e);
+      return defaultVal;
     }
   }
 

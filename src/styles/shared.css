@@ -62,6 +62,130 @@
 }
 
 
+/* Shared Overlay Container */
+.nle-overlay-base {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  flex-direction: column;
+  background: var(--nle-bg-solid);
+  color: var(--nle-txt);
+  overflow: hidden;
+}
+.nle-overlay-base.show {
+  display: flex;
+}
+
+/* Shared Header */
+.nle-overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--nle-border);
+  background: var(--nle-bg-solid);
+  flex-shrink: 0;
+}
+
+/* Shared Buttons */
+.nle-btn-close {
+  width: 24px;
+  height: 24px;
+  padding: 0 !important;
+  border: 1px solid var(--nle-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--nle-txt-mut);
+  font-size: 16px !important;
+  line-height: 1;
+  cursor: pointer;
+}
+.nle-btn-close:hover {
+  color: var(--nle-txt);
+  border-color: var(--nle-accent);
+}
+
+.nle-btn-sm {
+  padding: 4px 9px;
+  border: 1px solid var(--nle-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--nle-txt-mut);
+  font-size: 11px;
+  cursor: pointer;
+}
+.nle-btn-sm:hover {
+  color: var(--nle-txt);
+  border-color: var(--nle-accent);
+}
+
+
+/* Responsive */
+.nle-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 20px;
+  border-radius: 20px;
+  z-index: 999999;
+  background: var(--nle-bg);
+  border: 1px solid var(--nle-border);
+  color: var(--nle-txt);
+  font-size: 13px;
+  box-shadow: var(--nle-shadow);
+  animation: nle-toast-in 0.3s ease, nle-toast-out 0.3s ease 2.2s forwards;
+  pointer-events: none;
+}
+@keyframes nle-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+@keyframes nle-toast-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Loading */
+.nle-loading {
+  text-align: center;
+  padding: 30px 0;
+  color: var(--nle-txt-mut);
+}
+.nle-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--nle-accent);
+  border-radius: 50%;
+  animation: nle-spin 0.7s linear infinite;
+  margin: 0 auto 8px;
+}
+@keyframes nle-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.nle-empty {
+  text-align: center;
+  padding: 30px 0;
+  color: var(--nle-txt-mut);
+  font-size: 13px;
+}
+
+
 /* Responsive */
 @media (max-width: 768px) {
   #nle-panel {

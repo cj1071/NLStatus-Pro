@@ -1,25 +1,4 @@
 /* 帖子导出 */
-.nle-export-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 20;
-  display: none;
-  flex-direction: column;
-  background: var(--nle-bg-solid);
-  overflow: hidden;
-}
-.nle-export-overlay.show {
-  display: flex;
-}
-.nle-export-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--nle-border);
-  background: var(--nle-bg-solid);
-}
 .nle-export-title {
   font-size: 13px;
   font-weight: 700;
@@ -27,24 +6,6 @@
 .nle-export-header-actions {
   display: flex;
   gap: 6px;
-}
-.nle-export-refresh,
-.nle-export-close {
-  border: 1px solid var(--nle-border);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--nle-txt-mut);
-  cursor: pointer;
-}
-.nle-export-refresh {
-  padding: 4px 9px;
-  font-size: 11px;
-}
-.nle-export-close {
-  width: 24px;
-  height: 24px;
-  font-size: 16px;
-  line-height: 1;
 }
 .nle-export-refresh:hover,
 .nle-export-close:hover {

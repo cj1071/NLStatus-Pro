@@ -47,13 +47,13 @@ export class AITopicSummary {
     );
 
     this._overlay = document.createElement('div');
-    this._overlay.className = 'nle-ai-overlay';
+    this._overlay.className = 'nle-ai-overlay nle-overlay-base';
     this._overlay.innerHTML = `
-      <div class="nle-ai-header">
+      <div class="nle-ai-header nle-overlay-header">
         <div class="nle-ai-title">AI 帖子总结</div>
         <div class="nle-ai-header-actions">
-          <button class="nle-ai-refresh" type="button">刷新</button>
-          <button class="nle-ai-close" type="button" title="关闭">×</button>
+          <button class="nle-ai-refresh nle-btn-sm" type="button">刷新</button>
+          <button class="nle-ai-close nle-btn-close" type="button" title="关闭">×</button>
         </div>
       </div>
       <div class="nle-ai-tabs">

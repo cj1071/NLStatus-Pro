@@ -1,27 +1,4 @@
 /* AI Topic Summary */
-.nle-ai-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 20;
-  display: none;
-  flex-direction: column;
-  background: var(--nle-bg-solid);
-  color: var(--nle-txt);
-  overflow: hidden;
-}
-.nle-ai-overlay.show {
-  display: flex;
-}
-.nle-ai-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--nle-border);
-  background: var(--nle-bg-solid);
-  flex-shrink: 0;
-}
 .nle-ai-title {
   font-size: 13px;
   font-weight: 700;
@@ -39,19 +16,6 @@
   background: var(--nle-bg-card);
   color: var(--nle-txt);
   cursor: pointer;
-}
-.nle-ai-header-actions button {
-  padding: 4px 9px;
-  font-size: 11px;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--nle-txt-mut);
-}
-.nle-ai-close {
-  width: 24px;
-  height: 24px;
-  padding: 0 !important;
-  font-size: 16px !important;
-  line-height: 1;
 }
 .nle-ai-header-actions button:hover {
   color: var(--nle-txt);

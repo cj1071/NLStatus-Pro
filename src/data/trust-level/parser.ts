@@ -54,11 +54,6 @@ export class TrustLevelParser {
     if (typeof condition === 'string') {
       return Utils.sanitize(condition.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' '), 180);
     }
-    if (condition && typeof condition === 'object') {
-      const obj = condition as Record<string, unknown>;
-      const val = obj.text || obj.name || obj.title || obj.label || obj.message;
-      if (typeof val === 'string') return this._conditionText(val);
-    }
     return '';
   }
 
