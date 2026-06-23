@@ -203,13 +203,14 @@ export class ExportFormatter {
       .post-content code{background:#eef2f7;border-radius:4px;padding:2px 5px}
       .post-content pre code{background:transparent;padding:0}
       .post-content blockquote,.post-content aside.quote{border-left:3px solid #4f8bf5;background:#f6f8fc;margin:12px 0;padding:10px 12px;color:#4b5563}
-      .post-content aside.onebox{display:flex;align-items:flex-start;gap:12px;padding:12px;border:1px solid #e5e9f2;border-radius:10px;background:#fafbff;margin:12px 0;text-decoration:none;transition:all .2s}
+      .post-content aside.onebox{display:block;padding:12px;border:1px solid #e5e9f2;border-radius:10px;background:#fafbff;margin:12px 0;text-decoration:none;transition:all .2s}
       .post-content aside.onebox:hover{border-color:#4f8bf5;background:#f6f8fc;box-shadow:0 2px 8px rgba(79,139,245,.1)}
-      .post-content aside.onebox img.site-icon{width:32px;height:32px;border-radius:6px;flex-shrink:0;object-fit:cover}
-      .post-content aside.onebox .onebox-body{flex:1;min-width:0}
+      .post-content aside.onebox header.source{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+      .post-content aside.onebox img.site-icon{width:24px;height:24px;border-radius:4px;flex-shrink:0;object-fit:cover}
+      .post-content aside.onebox header.source a{font-size:13px;color:#697185;text-decoration:none;font-weight:500}
+      .post-content aside.onebox .onebox-body{display:block}
       .post-content aside.onebox h3,.post-content aside.onebox h4{margin:0 0 4px;font-size:14px;font-weight:600;color:#182033;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       .post-content aside.onebox .description,.post-content aside.onebox p{margin:4px 0 0;font-size:12px;color:#697185;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-      .post-content aside.onebox .source,.post-content aside.onebox .domain{display:block;margin-top:4px;font-size:11px;color:#8b95a8;text-decoration:none}
       .post-content table{width:100%;border-collapse:collapse;margin:10px 0}
       .post-content th,.post-content td{border:1px solid #e5e9f2;padding:6px 8px}
       .post-footer{margin-top:12px;padding-top:10px;border-top:1px solid #edf0f7;color:#d33}
