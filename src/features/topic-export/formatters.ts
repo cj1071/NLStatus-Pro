@@ -2,13 +2,53 @@
  * 导出格式转换模块
  */
 
-import type { ExportData, TopicInfo } from './types';
+import type { ExportData, TopicInfo, TopicPost, PostTreeNode } from './types';
 import { Network } from '../../utils/network';
 import { Utils } from '../../utils/helpers';
 
 export class ExportFormatter {
+  /**
+   * 构建回复树结构
+   */
+  private _buildReplyTree(posts: TopicPost[]): PostTreeNode[] {
+    const map = new Map<number, PostTreeNode>();
+    const roots: PostTreeNode[] = [];
+
+    // 第一遍：创建所有节点
+    posts.forEach(post => {
+      map.set(post.postNumber, { post, children: [], depth: 0 });
+    });
+
+    // 第二遍：建立父子关系
+    posts.forEach(post => {
+      const node = map.get(post.postNumber)!;
+      if (post.replyTo?.postNumber && map.has(post.replyTo.postNumber)) {
+        const parent = map.get(post.replyTo.postNumber)!;
+        parent.children.push(node);
+        node.depth = parent.depth + 1;
+      } else {
+        roots.push(node);
+      }
+    });
+
+    return roots;
+  }
+
+  /**
+   * 展平树结构为线性列表（深度优先）
+   */
+  private _flattenTree(nodes: PostTreeNode[]): PostTreeNode[] {
+    const result: PostTreeNode[] = [];
+    const visit = (node: PostTreeNode) => {
+      result.push(node);
+      node.children.forEach(visit);
+    };
+    nodes.forEach(visit);
+    return result;
+  }
+
   toMarkdown(data: ExportData): string {
-    const { topic, posts, exportDate, postCount, range } = data;
+    const { topic, posts, exportDate, postCount, range, hierarchical } = data;
     const sourceUrl = `${Network.getOrigin()}/t/topic/${topic.id}`;
     const lines: string[] = [
       `# ${this._oneLine(topic.title) || '未命名话题'}`,
@@ -21,56 +61,124 @@ export class ExportFormatter {
     if (topic.views) lines.push(`> 浏览量: ${Utils.formatNumber(topic.views)}`);
     if (topic.category) lines.push(`> 分类: ${this._oneLine(topic.category)}`);
     if (topic.tags.length) lines.push(`> 标签: ${topic.tags.map(tag => `\`${this._oneLine(tag)}\``).join(' ')}`);
+    if (hierarchical) lines.push(`> 导出模式: 层级模式`);
     lines.push(`> 原文链接: ${sourceUrl}`, '', '---', '');
 
-    posts.forEach((post, index) => {
-      const username = this._oneLine(post.author.username);
-      const name = this._oneLine(post.author.name || username);
-      const author = name && username && name !== username ? `${name} (@${username})` : (username ? `@${username}` : name || '未知作者');
-      const meta = [
-        `> 时间: ${this._formatDate(post.timestamp)}`,
-        post.replyTo ? `> 回复: #${post.replyTo.postNumber}${post.replyTo.username ? ` @${this._oneLine(post.replyTo.username)}` : ''}` : '',
-        post.likeCount > 0 ? `> 点赞: ${post.likeCount}` : '',
-        `> 链接: ${sourceUrl}/${post.postNumber}`,
-      ].filter(Boolean);
+    // 层级模式 vs 线性模式
+    if (hierarchical) {
+      const tree = this._buildReplyTree(posts);
+      const flatTree = this._flattenTree(tree);
+      flatTree.forEach((node, index) => {
+        const { post, depth } = node;
+        const indent = '  '.repeat(depth); // 每层缩进 2 个空格
+        const username = this._oneLine(post.author.username);
+        const name = this._oneLine(post.author.name || username);
+        const author = name && username && name !== username ? `${name} (@${username})` : (username ? `@${username}` : name || '未知作者');
+        const meta = [
+          `> 时间: ${this._formatDate(post.timestamp)}`,
+          post.replyTo ? `> 回复: #${post.replyTo.postNumber}${post.replyTo.username ? ` @${this._oneLine(post.replyTo.username)}` : ''}` : '',
+          post.likeCount > 0 ? `> 点赞: ${post.likeCount}` : '',
+          `> 链接: ${sourceUrl}/${post.postNumber}`,
+        ].filter(Boolean).map(line => `${indent}${line}`);
 
-      lines.push(`## #${post.postNumber} ${author}`, '', meta.join('\n'), '');
-      lines.push(this._htmlToMarkdown(post.content) || '_（无内容）_');
-      if (index !== posts.length - 1) lines.push('', '---', '');
-    });
+        lines.push(`${indent}## #${post.postNumber} ${author}`, '');
+        lines.push(meta.join('\n'), '');
+
+        // 内容缩进
+        const content = this._htmlToMarkdown(post.content) || '_（无内容）_';
+        lines.push(content.split('\n').map(line => line ? `${indent}${line}` : '').join('\n'));
+        if (index !== flatTree.length - 1) lines.push('', '---', '');
+      });
+    } else {
+      // 原有的线性模式
+      posts.forEach((post, index) => {
+        const username = this._oneLine(post.author.username);
+        const name = this._oneLine(post.author.name || username);
+        const author = name && username && name !== username ? `${name} (@${username})` : (username ? `@${username}` : name || '未知作者');
+        const meta = [
+          `> 时间: ${this._formatDate(post.timestamp)}`,
+          post.replyTo ? `> 回复: #${post.replyTo.postNumber}${post.replyTo.username ? ` @${this._oneLine(post.replyTo.username)}` : ''}` : '',
+          post.likeCount > 0 ? `> 点赞: ${post.likeCount}` : '',
+          `> 链接: ${sourceUrl}/${post.postNumber}`,
+        ].filter(Boolean);
+
+        lines.push(`## #${post.postNumber} ${author}`, '', meta.join('\n'), '');
+        lines.push(this._htmlToMarkdown(post.content) || '_（无内容）_');
+        if (index !== posts.length - 1) lines.push('', '---', '');
+      });
+    }
 
     return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n';
   }
 
   toHTML(data: ExportData): string {
-    const { topic, posts, exportDate, postCount, range } = data;
+    const { topic, posts, exportDate, postCount, range, hierarchical } = data;
     const sourceUrl = `${Network.getOrigin()}/t/topic/${topic.id}`;
     const tagsHtml = [
       topic.category ? `<span class="topic-tag">${Utils.escapeHtml(topic.category)}</span>` : '',
       ...topic.tags.map(tag => `<span class="topic-tag">${Utils.escapeHtml(tag)}</span>`),
     ].filter(Boolean).join('');
-    const postsHtml = posts.map(post => {
-      const username = Utils.escapeHtml(post.author.username || 'unknown');
-      const name = Utils.escapeHtml(post.author.name || post.author.username || '未知作者');
-      const avatar = post.author.avatarUrl
-        ? `<img class="avatar" src="${Utils.escapeHtml(post.author.avatarUrl)}" alt="${username}">`
-        : '<div class="avatar"></div>';
-      const reply = post.replyTo
-        ? `<div class="reply-to">回复 <a href="${sourceUrl}/${post.replyTo.postNumber}">#${post.replyTo.postNumber}</a>${post.replyTo.username ? ` @${Utils.escapeHtml(post.replyTo.username)}` : ''}</div>`
-        : '';
-      const likes = post.likeCount > 0 ? `<div class="post-footer">点赞 ${post.likeCount}</div>` : '';
-      return `
-        <article class="post" id="post-${post.postNumber}">
-          <header class="post-header">
-            <div class="author">${avatar}<div><b>${name}</b><span>@${username}</span></div></div>
-            <div class="post-meta"><span>${this._formatDate(post.timestamp)}</span><a href="${sourceUrl}/${post.postNumber}">#${post.postNumber}</a></div>
-          </header>
-          ${reply}
-          <div class="post-content">${post.content}</div>
-          ${likes}
-        </article>
-      `;
-    }).join('');
+
+    let postsHtml = '';
+
+    if (hierarchical) {
+      // 层级模式：使用树状结构
+      const tree = this._buildReplyTree(posts);
+      const renderNode = (node: PostTreeNode): string => {
+        const { post, children, depth } = node;
+        const username = Utils.escapeHtml(post.author.username || 'unknown');
+        const name = Utils.escapeHtml(post.author.name || post.author.username || '未知作者');
+        const avatar = post.author.avatarUrl
+          ? `<img class="avatar" src="${Utils.escapeHtml(post.author.avatarUrl)}" alt="${username}">`
+          : '<div class="avatar"></div>';
+        const reply = post.replyTo
+          ? `<div class="reply-to">回复 <a href="${sourceUrl}/${post.replyTo.postNumber}">#${post.replyTo.postNumber}</a>${post.replyTo.username ? ` @${Utils.escapeHtml(post.replyTo.username)}` : ''}</div>`
+          : '';
+        const likes = post.likeCount > 0 ? `<div class="post-footer">点赞 ${post.likeCount}</div>` : '';
+
+        const childrenHtml = children.length > 0
+          ? `<div class="post-replies">${children.map(renderNode).join('')}</div>`
+          : '';
+
+        return `
+          <article class="post post-depth-${depth}" id="post-${post.postNumber}" data-depth="${depth}">
+            <header class="post-header">
+              <div class="author">${avatar}<div><b>${name}</b><span>@${username}</span></div></div>
+              <div class="post-meta"><span>${this._formatDate(post.timestamp)}</span><a href="${sourceUrl}/${post.postNumber}">#${post.postNumber}</a></div>
+            </header>
+            ${reply}
+            <div class="post-content">${post.content}</div>
+            ${likes}
+            ${childrenHtml}
+          </article>
+        `;
+      };
+      postsHtml = tree.map(renderNode).join('');
+    } else {
+      // 线性模式（原有逻辑）
+      postsHtml = posts.map(post => {
+        const username = Utils.escapeHtml(post.author.username || 'unknown');
+        const name = Utils.escapeHtml(post.author.name || post.author.username || '未知作者');
+        const avatar = post.author.avatarUrl
+          ? `<img class="avatar" src="${Utils.escapeHtml(post.author.avatarUrl)}" alt="${username}">`
+          : '<div class="avatar"></div>';
+        const reply = post.replyTo
+          ? `<div class="reply-to">回复 <a href="${sourceUrl}/${post.replyTo.postNumber}">#${post.replyTo.postNumber}</a>${post.replyTo.username ? ` @${Utils.escapeHtml(post.replyTo.username)}` : ''}</div>`
+          : '';
+        const likes = post.likeCount > 0 ? `<div class="post-footer">点赞 ${post.likeCount}</div>` : '';
+        return `
+          <article class="post" id="post-${post.postNumber}">
+            <header class="post-header">
+              <div class="author">${avatar}<div><b>${name}</b><span>@${username}</span></div></div>
+              <div class="post-meta"><span>${this._formatDate(post.timestamp)}</span><a href="${sourceUrl}/${post.postNumber}">#${post.postNumber}</a></div>
+            </header>
+            ${reply}
+            <div class="post-content">${post.content}</div>
+            ${likes}
+          </article>
+        `;
+      }).join('');
+    }
 
     const css = `
       *{box-sizing:border-box}
@@ -95,10 +203,23 @@ export class ExportFormatter {
       .post-content code{background:#eef2f7;border-radius:4px;padding:2px 5px}
       .post-content pre code{background:transparent;padding:0}
       .post-content blockquote,.post-content aside.quote{border-left:3px solid #4f8bf5;background:#f6f8fc;margin:12px 0;padding:10px 12px;color:#4b5563}
+      .post-content aside.onebox{display:flex;align-items:flex-start;gap:12px;padding:12px;border:1px solid #e5e9f2;border-radius:10px;background:#fafbff;margin:12px 0;text-decoration:none;transition:all .2s}
+      .post-content aside.onebox:hover{border-color:#4f8bf5;background:#f6f8fc;box-shadow:0 2px 8px rgba(79,139,245,.1)}
+      .post-content aside.onebox img.site-icon{width:32px;height:32px;border-radius:6px;flex-shrink:0;object-fit:cover}
+      .post-content aside.onebox .onebox-body{flex:1;min-width:0}
+      .post-content aside.onebox h3,.post-content aside.onebox h4{margin:0 0 4px;font-size:14px;font-weight:600;color:#182033;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .post-content aside.onebox .description,.post-content aside.onebox p{margin:4px 0 0;font-size:12px;color:#697185;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+      .post-content aside.onebox .source,.post-content aside.onebox .domain{display:block;margin-top:4px;font-size:11px;color:#8b95a8;text-decoration:none}
       .post-content table{width:100%;border-collapse:collapse;margin:10px 0}
       .post-content th,.post-content td{border:1px solid #e5e9f2;padding:6px 8px}
       .post-footer{margin-top:12px;padding-top:10px;border-top:1px solid #edf0f7;color:#d33}
       .footer{text-align:center;color:#697185;font-size:12px;padding:14px 0}
+      .post-replies{margin-left:32px;padding-left:16px;border-left:2px solid #e0e7ff;margin-top:12px}
+      .post-replies .post{background:#fafbff;border-color:#dde5f5}
+      .post-depth-0{margin-left:0}
+      .post-depth-1{margin-left:0}
+      .post-depth-2{background:#fafbff}
+      .post-depth-3{background:#f5f7fc}
       @media print{body{background:#fff}.container{padding:0}.header{border-radius:0}.post{box-shadow:none;border-radius:8px;break-inside:auto}.post-header,.reply-to,.post-footer{break-inside:avoid}.post-content img{break-inside:avoid;max-height:180mm}}
     `;
 
@@ -236,6 +357,11 @@ export class ExportFormatter {
         return this._listToMarkdown(el, tag === 'ol');
       case 'blockquote':
       case 'aside': {
+        // 处理 Onebox 卡片
+        if (tag === 'aside' && el.classList.contains('onebox')) {
+          return this._oneboxToMarkdown(el);
+        }
+
         const contentEl = tag === 'aside' && el.classList.contains('quote')
           ? (el.querySelector('blockquote') || el)
           : el;
@@ -259,6 +385,52 @@ export class ExportFormatter {
       default:
         return this._childrenToMarkdown(el);
     }
+  }
+
+  /**
+   * 将 Onebox 卡片转换为 Markdown
+   */
+  private _oneboxToMarkdown(el: HTMLElement): string {
+    // 提取 Onebox 信息
+    const link = el.querySelector('a.onebox') || el.querySelector('a[href]');
+    const href = link?.getAttribute('href') || '';
+
+    // 尝试提取标题
+    const titleEl = el.querySelector('.onebox-body h3, .onebox-body h4, .source');
+    const title = titleEl ? this._inlineMarkdown(titleEl).trim() : '';
+
+    // 尝试提取描述
+    const descEl = el.querySelector('.onebox-body p, .description');
+    const description = descEl ? this._inlineMarkdown(descEl).trim() : '';
+
+    // 尝试提取域名/来源
+    const domainEl = el.querySelector('.domain, .source');
+    const domain = domainEl ? this._inlineMarkdown(domainEl).trim() : '';
+
+    // 构建 Markdown 格式的引用块
+    if (!href) return this._childrenToMarkdown(el);
+
+    const lines: string[] = [];
+
+    // 如果有标题，使用加粗链接
+    if (title) {
+      lines.push(`> **[${title}](${href})**`);
+    } else {
+      lines.push(`> **[${href}](${href})**`);
+    }
+
+    // 添加域名
+    if (domain && domain !== title) {
+      lines.push(`> 🔗 ${domain}`);
+    }
+
+    // 添加描述
+    if (description) {
+      lines.push(`>`);
+      lines.push(`> ${description}`);
+    }
+
+    return lines.join('\n') + '\n\n';
   }
 
   private _childrenToMarkdown(node: Node): string {

@@ -15,6 +15,7 @@ export class TopicExporter {
   private _ui: ExportUI;
   private _format: ExportFormat = 'html';
   private _embedImages = false;
+  private _hierarchical = false;
   private _cache: TopicInfo | null = null;
   private _abort: AbortController | null = null;
 
@@ -74,12 +75,16 @@ export class TopicExporter {
         info,
         this._format,
         this._embedImages,
+        this._hierarchical,
         (format) => {
           this._format = format;
           this._ui.syncEmbedImagesControl(format);
         },
         (embed) => {
           this._embedImages = embed;
+        },
+        (hierarchical) => {
+          this._hierarchical = hierarchical;
         },
         (start, end) => this._doExport(info, start, end),
       );
@@ -123,6 +128,7 @@ export class TopicExporter {
         exportDate: new Date().toISOString(),
         postCount: posts.length,
         range: { start, end },
+        hierarchical: this._hierarchical,
       };
 
       this._ui.setStatus({ message: '正在生成文件...', current: posts.length, total: posts.length });

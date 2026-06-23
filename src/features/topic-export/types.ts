@@ -39,6 +39,7 @@ export interface ExportData {
     start: number;
     end: number;
   };
+  hierarchical?: boolean; // 是否使用层级模式
 }
 
 export interface ExportStatus {
@@ -47,4 +48,10 @@ export interface ExportStatus {
   detail?: string;
   current?: number;
   total?: number;
+}
+
+export interface PostTreeNode {
+  post: TopicPost;
+  children: PostTreeNode[];
+  depth: number;
 }

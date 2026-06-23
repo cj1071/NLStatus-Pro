@@ -79,8 +79,10 @@ export class ExportUI {
     info: TopicInfo,
     format: ExportFormat,
     embedImages: boolean,
+    hierarchical: boolean,
     onFormatChange: (format: ExportFormat) => void,
     onEmbedImagesChange: (embed: boolean) => void,
+    onHierarchicalChange: (hierarchical: boolean) => void,
     onExport: (start: number, end: number) => void,
   ): void {
     this._body.innerHTML = `
@@ -100,6 +102,10 @@ export class ExportUI {
       <label class="nle-export-option">
         <input id="nle-export-embed-images" type="checkbox" ${embedImages ? 'checked' : ''}>
         <span>HTML/PDF 嵌入图片</span>
+      </label>
+      <label class="nle-export-option">
+        <input id="nle-export-hierarchical" type="checkbox" ${hierarchical ? 'checked' : ''}>
+        <span>层级模式（按回复关系组织）</span>
       </label>
       <div class="nle-export-actions">
         <button id="nle-export-start-btn" class="nle-export-start" type="button">开始导出</button>
@@ -121,6 +127,12 @@ export class ExportUI {
     const embedCheckbox = this._body.querySelector<HTMLInputElement>('#nle-export-embed-images');
     embedCheckbox?.addEventListener('change', () => {
       onEmbedImagesChange(embedCheckbox.checked);
+    });
+
+    // 绑定层级模式选项
+    const hierarchicalCheckbox = this._body.querySelector<HTMLInputElement>('#nle-export-hierarchical');
+    hierarchicalCheckbox?.addEventListener('change', () => {
+      onHierarchicalChange(hierarchicalCheckbox.checked);
     });
 
     // 绑定导出按钮
