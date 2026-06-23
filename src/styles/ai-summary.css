@@ -183,7 +183,7 @@
 }
 .nle-ai-form input,
 .nle-ai-form textarea {
-  padding: 8px;
+  /* padding: 8px; */
   font-size: 12px;
 }
 .nle-ai-form textarea {
