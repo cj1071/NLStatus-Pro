@@ -116,4 +116,17 @@ export const Utils = {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 100 100"><rect width="100" height="100" rx="50" fill="hsl(${hue} 55% 50%)"/><text x="50" y="50" dy="0.02em" text-anchor="middle" dominant-baseline="middle" font-size="46" font-weight="700" fill="#fff">${char}</text></svg>`;
     return `data:image/svg+xml,${encodeURIComponent(svg)}`;
   },
+
+  formatError(e: unknown): string {
+    if (e instanceof Error) return e.message;
+    return '未知错误';
+  },
+
+  formatErrorWithIcon(e: unknown): string {
+    const msg = Utils.formatError(e);
+    if (msg.includes('登录')) return '🔒 ' + msg;
+    if (msg.includes('频繁')) return '⏳ ' + msg;
+    if (msg.includes('超时')) return '⏰ ' + msg;
+    return '⚠️ ' + msg;
+  },
 };

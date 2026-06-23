@@ -1,4 +1,3 @@
-import { ErrorFormatter } from '../../utils/errors';
 import { Utils } from '../../utils/helpers';
 import { Storage } from '../../utils/storage';
 import { Network } from '../../utils/network';
@@ -89,7 +88,7 @@ export class TrustPanel {
       this._options.notifier.checkMilestones(reqItems);
     } catch (e) {
       console.warn('[NLE] Fetch error:', (e as Error).message);
-      this._showError(ErrorFormatter.withIcon(e));
+      this._showError(Utils.formatErrorWithIcon(e));
     } finally {
       this._loading = false;
       this._hideProgress();
