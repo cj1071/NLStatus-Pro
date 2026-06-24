@@ -2,7 +2,7 @@
 
 NodeLoc 状态增强脚本 - 信任等级追踪、阅读统计、能量值显示、排行榜、活动记录、帖子导出、AI 帖子总结
 
-[![Version](https://img.shields.io/badge/Version-v1.2.1-22c55e)](https://github.com/cj1071/NLStatus-Pro/releases)
+[![Version](https://img.shields.io/github/package-json/v/cj1071/NLStatus-Pro?label=version&color=22c55e)](https://github.com/cj1071/NLStatus-Pro/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.0-646CFF)](https://vitejs.dev/)
@@ -235,6 +235,19 @@ pnpm build
 ---
 
 ## 📝 更新日志
+
+### v1.2.2 (2026-06-24)
+
+**🐛 Bug 修复**
+- 修复导出功能 Onebox 卡片渲染问题
+  - 修复 HTML 导出 Onebox 卡片左右布局显示为上下结构
+  - 修复域名和标题重复显示问题
+  - 精确匹配 Discourse Onebox HTML 结构提取
+  - 优化 Markdown 和 HTML 导出格式一致性
+
+**✨ 改进**
+- Badge 版本号改为自动从 package.json 读取
+- 优化 Onebox 卡片样式（图标尺寸、间距、布局）
 
 ### v1.2.1 (2026-06-23)
 
