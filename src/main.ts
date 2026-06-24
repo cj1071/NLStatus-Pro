@@ -40,21 +40,8 @@ async function startup(): Promise<void> {
   });
   navObserver.observe(document.body, { childList: true, subtree: true });
 
-  // Set up cleanup on page navigation (Discourse SPA)
-  let lastUrl = location.href;
-  const navigationCheck = setInterval(() => {
-    if (lastUrl !== location.href) {
-      lastUrl = location.href;
-      // Re-inject if needed
-      if (panel && !panel.isMounted()) {
-        // Panel was removed by Discourse's page transition
-        Logger.log('Panel removed by page transition, but instance retained');
-      }
-    }
-  }, 5000);
-
+  // Cleanup on page unload
   window.addEventListener('beforeunload', () => {
-    clearInterval(navigationCheck);
     panel?.destroy();
   });
 }

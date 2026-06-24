@@ -8,6 +8,7 @@ import { ExportUI } from './ui';
 import type { ExportFormat, TopicInfo, ExportData } from './types';
 import { Network } from '../../utils/network';
 import { Utils } from '../../utils/helpers';
+import { UrlWatcher } from '../../utils/url-watcher';
 
 export class TopicExporter {
   private _fetcher: TopicDataFetcher;
@@ -18,6 +19,7 @@ export class TopicExporter {
   private _hierarchical = false;
   private _cache: TopicInfo | null = null;
   private _abort: AbortController | null = null;
+  private _urlWatcher: UrlWatcher;
 
   constructor(
     private _root: HTMLElement,
@@ -30,14 +32,21 @@ export class TopicExporter {
       () => this.hide(),
       () => this._renderHome(true),
     );
+    this._urlWatcher = new UrlWatcher(() => {
+      this._cache = null;
+      void this._renderHome(false);
+    });
   }
 
   show(): void {
+    this._urlWatcher.syncUrl();
+    this._urlWatcher.start();
     this._ui.show();
     void this._renderHome(false);
   }
 
   hide(): void {
+    this._urlWatcher.stop();
     this._abort?.abort();
     this._abort = null;
     this._ui.hide();
@@ -45,6 +54,7 @@ export class TopicExporter {
 
   destroy(): void {
     this.hide();
+    this._urlWatcher.destroy();
     this._fetcher.clearImageCache();
     this._ui.remove();
   }

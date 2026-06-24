@@ -5,6 +5,7 @@
 import { Storage } from '../../utils/storage';
 import { Utils } from '../../utils/helpers';
 import { Network } from '../../utils/network';
+import { UrlWatcher } from '../../utils/url-watcher';
 import { AIConfigManager } from './config';
 import { SummaryHistoryManager } from './history';
 import { AISummaryGenerator } from './generator';
@@ -26,8 +27,7 @@ export class AITopicSummary {
   private _topicCache: TopicInfo | null = null;
   private _abort: AbortController | null = null;
   private _chatAbort: AbortController | null = null;
-  private _lastUrl = location.href;
-  private _urlTimer: ReturnType<typeof setInterval> | null = null;
+  private _urlWatcher: UrlWatcher;
   private _keydownHandler: ((event: KeyboardEvent) => void) | null = null;
 
   constructor(
@@ -46,6 +46,14 @@ export class AITopicSummary {
       this._showToast,
       (question, onChunk) => this._handleFollowUpQuestion(question, onChunk),
     );
+    this._urlWatcher = new UrlWatcher(() => {
+      this._topicCache = null;
+      if (!this._overlay.classList.contains('show')) return;
+      const active = this._overlay.querySelector<HTMLElement>('.nle-ai-tab.active');
+      if (active?.dataset.tab === 'home') {
+        void this._renderHome(false);
+      }
+    });
 
     this._overlay = document.createElement('div');
     this._overlay.className = 'nle-ai-overlay nle-overlay-base';
@@ -73,7 +81,8 @@ export class AITopicSummary {
   show(): void {
     const topicId = Network.getTopicId();
     if (this._topicCache && this._topicCache.id !== topicId) this._topicCache = null;
-    this._lastUrl = location.href;
+    this._urlWatcher.syncUrl();
+    this._urlWatcher.start();
     this._mountHost.classList.add('nle-subpanel-open');
     this._overlay.classList.add('show');
 
@@ -84,7 +93,7 @@ export class AITopicSummary {
   }
 
   hide(): void {
-    this._stopUrlWatch();
+    this._urlWatcher.stop();
     this._abort?.abort();
     this._abort = null;
     this._overlay.classList.remove('show');
@@ -93,6 +102,7 @@ export class AITopicSummary {
 
   destroy(): void {
     this.hide();
+    this._urlWatcher.destroy();
     this._viewer.close();
     if (this._keydownHandler) {
       document.removeEventListener('keydown', this._keydownHandler);
@@ -162,31 +172,8 @@ export class AITopicSummary {
     return Utils.toSafeInt(text.includes('/') ? text.split('/').pop() : text, 0);
   }
 
-  private _startUrlWatch(): void {
-    if (this._urlTimer) return;
-    this._urlTimer = setInterval(() => {
-      if (this._lastUrl === location.href) return;
-      this._lastUrl = location.href;
-      this._topicCache = null;
-      if (!this._overlay.classList.contains('show')) return;
-      if (!Network.getTopicId()) return;
-      const active = this._overlay.querySelector<HTMLElement>('.nle-ai-tab.active');
-      if (active?.dataset.tab === 'home') {
-        this._stopUrlWatch();
-        void this._renderHome(false);
-      }
-    }, 800);
-  }
-
-  private _stopUrlWatch(): void {
-    if (!this._urlTimer) return;
-    clearInterval(this._urlTimer);
-    this._urlTimer = null;
-  }
-
   private async _renderHome(refresh: boolean): Promise<void> {
     if (!Network.getTopicId()) {
-      this._startUrlWatch();
       this._body.innerHTML = `
         <div class="nle-ai-empty">
           <div class="nle-ai-empty-title">请先进入一个话题帖子</div>
@@ -196,7 +183,6 @@ export class AITopicSummary {
       return;
     }
 
-    this._stopUrlWatch();
     this._body.innerHTML = '<div class="nle-ai-status">正在获取话题信息...</div>';
 
     try {
@@ -387,7 +373,6 @@ export class AITopicSummary {
   }
 
   private _renderSettings(): void {
-    this._stopUrlWatch();
     const config = this._configManager.get();
 
     this._body.innerHTML = `
@@ -429,7 +414,6 @@ export class AITopicSummary {
   }
 
   private _renderHistory(): void {
-    this._stopUrlWatch();
     const history = this._historyManager.getAll();
 
     if (!history.length) {
