@@ -236,6 +236,30 @@ pnpm build
 
 ## 📝 更新日志
 
+### v1.2.3 (2026-06-24)
+
+**🔧 重构改进**
+- 新增 `UrlWatcher` 通用工具类，封装 URL 变化监听逻辑
+- 重构 `AITopicSummary` 和 `TopicExporter` 使用统一的 URL 监听工具
+- 消除 40 行重复代码，提升代码复用性和可维护性
+
+**🐛 Bug 修复**
+- 修复导出功能在帖子间切换时不自动刷新的问题
+- 修复 AI 总结在帖子间切换时不自动刷新的问题
+- 修复标题过长时溢出显示问题（限制 2 行 + 省略号）
+- 修复潜在的内存泄漏风险（显式 destroy 清理资源）
+
+**⚡ 性能优化**
+- 删除 main.ts 中无用的 5 秒全局轮询（节省 CPU）
+- URL 监听仅在弹窗打开时启动，关闭时立即停止
+
+**📦 技术细节**
+- 新增 `src/utils/url-watcher.ts` (78 行)
+- 优化 `src/features/ai-summary/index.ts` (-18 行)
+- 优化 `src/features/topic-export/index.ts` (+10 行)
+- 优化 `src/main.ts` (-14 行)
+- 优化 `src/styles/shared.css` (+6 行)
+
 ### v1.2.2 (2026-06-24)
 
 **🐛 Bug 修复**
